@@ -72,7 +72,7 @@
         .app-body {
             display: flex;
             flex: 1;
-            overflow: hidden; /* Prevent body scroll, let panels scroll */
+            overflow: hidden;
         }
         
         .sidebar {
@@ -290,6 +290,40 @@
             margin: 0 4px;
         }
 
+        /* Pagination Styles */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .pagination button {
+            padding: 6px 12px;
+            font-size: 12px;
+            margin: 0;
+            min-width: 32px;
+        }
+
+        .pagination button.active {
+            background-color: #27ae60;
+            font-weight: bold;
+        }
+
+        .pagination button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .pagination-info {
+            font-size: 12px;
+            color: #7f8c8d;
+            text-align: center;
+            margin-top: 10px;
+        }
+
         /* Logo Settings Modal */
         .modal {
             display: none;
@@ -476,27 +510,19 @@
                 
                 <div class="tab">
                     <button class="tablinks active" onclick="openTab(event, 'Tab-ViewRemove')">View & Remove</button>
-                    <button class="tablinks" onclick="openTab(event, 'Tab-AddAttr')">Add Attributes</button>
                     <button class="tablinks" onclick="openTab(event, 'Tab-Merge')">Merge XML</button>
                     <button class="tablinks" onclick="openTab(event, 'Tab-Patch')">Data Patching</button>
                     <button class="tablinks" onclick="openTab(event, 'Tab-Split')">Split Results</button>
                 </div>
 
                 <div id="Tab-ViewRemove" class="tabcontent" style="display: block;">
-                    <button onclick="viewAttributes()" style="margin-bottom: 15px; width: auto;">Refresh View</button>
+                    <button onclick="viewAttributes(1)" style="margin-bottom: 15px; width: auto;">Refresh View</button>
                     <div id="attributesView">
                         <div style="padding: 40px; text-align: center; color: #95a5a6; background: #f9f9f9; border-radius: 8px; border: 1px dashed #ccc;">
                             <i>Please upload and load an XML file from the sidebar to view data.</i>
                         </div>
                     </div>
-                </div>
-
-                <div id="Tab-AddAttr" class="tabcontent">
-                    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #dee2e6;">
-                        <input type="text" id="addAttrName" placeholder="Attribute Name">
-                        <input type="text" id="addAttrValue" placeholder="Attribute Value">
-                        <button onclick="addGlobalAttribute()" style="width: auto;">Apply to All Elements</button>
-                    </div>
+                    <div id="paginationContainer" style="display: none;"></div>
                 </div>
 
                 <div id="Tab-Merge" class="tabcontent">
@@ -534,7 +560,7 @@
     <!-- FOOTER -->
     <footer class="app-footer">
         <div class="footer-left">
-            <span>© 2026 XML Processor Dashboard - noviegshots</span>
+            <span>© 2024 XML Processor Dashboard</span>
         </div>
         <div class="footer-center">
             <a href="#" class="footer-link">Documentation</a>
@@ -577,6 +603,8 @@
         let attributeCache = []; 
         let splitResults = {};
         let selectedLogoData = null;
+        const ITEMS_PER_PAGE = 500;
+        let currentPage = 1;
 
         // Sample logos (base64 encoded SVG)
         const sampleLogos = [
@@ -699,6 +727,68 @@
             const mode = document.getElementById('splitMode').value;
             document.getElementById('categoryUI').style.display = mode === 'category' ? 'block' : 'none';
             document.getElementById('customUI').style.display = mode === 'custom' ? 'block' : 'none';
+        }
+
+        // Pagination functions
+        function renderPagination() {
+            const totalPages = Math.ceil(attributeCache.length / ITEMS_PER_PAGE);
+            let paginationHtml = '<div class="pagination">';
+            
+            // Previous button
+            paginationHtml += `<button onclick="viewAttributes(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>← Previous</button>`;
+            
+            // Page numbers
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === currentPage) {
+                    paginationHtml += `<button class="active" onclick="viewAttributes(${i})">${i}</button>`;
+                } else if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    paginationHtml += `<button onclick="viewAttributes(${i})">${i}</button>`;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    paginationHtml += `<button disabled>...</button>`;
+                }
+            }
+            
+            // Next button
+            paginationHtml += `<button onclick="viewAttributes(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next →</button>`;
+            paginationHtml += '</div>';
+            
+            paginationHtml += `<div class="pagination-info">Page ${currentPage} of ${totalPages} | Total records: ${attributeCache.length}</div>`;
+            
+            return paginationHtml;
+        }
+
+        function viewAttributes(page = 1) {
+            if (attributeCache.length === 0) return;
+            
+            currentPage = page;
+            const totalPages = Math.ceil(attributeCache.length / ITEMS_PER_PAGE);
+            
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+            
+            const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+            const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, attributeCache.length);
+            const pageData = attributeCache.slice(startIndex, endIndex);
+            
+            let uniqueItems = new Set();
+            attributeCache.forEach(item => Object.keys(item.data).forEach(k => { if (k.toLowerCase() !== 'id') uniqueItems.add(k); }));
+            
+            let html = '<div style="margin-bottom: 15px; background: #fff3f3; padding: 15px; border-radius: 8px; border: 1px solid #ffcccc;">';
+            html += '<strong style="color: #c0392b; display: block; margin-bottom: 5px;">Quick Strip Data (Elements or Attributes):</strong>';
+            uniqueItems.forEach(item => html += `<button class="global-remove-btn" onclick="removeGlobalItem('${item}')">✖ ${item}</button> `);
+            html += '</div>';
+            
+            html += '<table><tr><th style="width: 80px;">Row</th><th>Data Content</th></tr>';
+            pageData.forEach((item, index) => {
+                const actualIndex = startIndex + index + 1;
+                let content = Object.entries(item.data).filter(([key]) => key.toLowerCase() !== 'id').map(([key, value]) => `<div class="attr-badge"><span class="attr-key">${key}:</span><span class="attr-val">"${value}"</span></div>`).join('');
+                html += `<tr><td><strong># ${actualIndex}</strong></td><td><div class="attr-container">${content}</div></td></tr>`;
+            });
+            html += '</table>';
+            document.getElementById('attributesView').innerHTML = html;
+            
+            document.getElementById('paginationContainer').innerHTML = renderPagination();
+            document.getElementById('paginationContainer').style.display = 'block';
         }
 
         function splitByCategory() {
@@ -837,10 +927,8 @@
             }
 
             const groupData = splitResults[groupName];
-            let uniqueKeys = new Set();
-            groupData.forEach(item => Object.keys(item.data).forEach(k => uniqueKeys.add(k)));
-            let headers = Array.from(uniqueKeys);
-
+            const totalPages = Math.ceil(groupData.length / ITEMS_PER_PAGE);
+            
             let html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -876,6 +964,7 @@
             border-radius: 12px; 
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.05); 
             padding: 32px; 
+            margin-bottom: 20px;
         }
         .header { 
             display: flex; 
@@ -950,50 +1039,79 @@
             font-size: 0.75rem; 
             font-weight: 500; 
         }
+        .page-break { page-break-after: always; margin-top: 40px; }
+        .page-info { 
+            text-align: center; 
+            color: var(--text-muted); 
+            font-size: 0.75rem; 
+            margin-top: 20px; 
+            padding-top: 20px; 
+            border-top: 1px solid var(--border);
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="card">
-            <div class="header">
-                <div class="header-text">
-                    <h1>Data Export Report</h1>
-                    <p>Group: <strong>${escapeHtml(groupName)}</strong> | Generated on ${new Date().toLocaleString()}</p>
-                </div>
-                <div>
-                    <span class="badge">Total Records: ${groupData.length}</span>
-                </div>
-            </div>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th class="row-num">#</th>`;
+    <div class="container">`;
 
-            headers.forEach(h => html += `<th>${h}</th>`);
-            html += `                        </tr>
-                    </thead>
-                    <tbody>`;
+            let uniqueKeys = new Set();
+            groupData.forEach(item => Object.keys(item.data).forEach(k => uniqueKeys.add(k)));
+            let headers = Array.from(uniqueKeys);
 
-            groupData.forEach((item, index) => {
-                html += `<tr><td class="row-num">${index+1}</td>`;
-                headers.forEach(h => {
-                    let val = item.data[h];
-                    if (val === undefined || val === null || val === '') {
-                        html += `<td><span class="empty-cell">Empty</span></td>`;
-                    } else if (val.toLowerCase() === 'null') {
-                        html += `<td><span class="empty-cell">null</span></td>`;
-                    } else {
-                        html += `<td>${val}</td>`;
-                    }
+            // Generate pages
+            for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+                const pageStartIndex = (pageNum - 1) * ITEMS_PER_PAGE;
+                const pageEndIndex = Math.min(pageStartIndex + ITEMS_PER_PAGE, groupData.length);
+                const pageData = groupData.slice(pageStartIndex, pageEndIndex);
+
+                html += `<div class="card">
+                    <div class="header">
+                        <div class="header-text">
+                            <h1>Data Export Report</h1>
+                            <p>Group: <strong>${escapeHtml(groupName)}</strong> | Page ${pageNum} of ${totalPages}</p>
+                        </div>
+                        <div>
+                            <span class="badge">Records: ${pageStartIndex + 1}-${pageEndIndex}</span>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th class="row-num">#</th>`;
+                
+                headers.forEach(h => html += `<th>${h}</th>`);
+                html += `                            </tr>
+                            </thead>
+                            <tbody>`;
+                
+                pageData.forEach((item, index) => {
+                    const actualIndex = pageStartIndex + index + 1;
+                    html += `<tr><td class="row-num">${actualIndex}</td>`;
+                    headers.forEach(h => {
+                        let val = item.data[h];
+                        if (val === undefined || val === null || val === '') {
+                            html += `<td><span class="empty-cell">Empty</span></td>`;
+                        } else if (val.toLowerCase() === 'null') {
+                            html += `<td><span class="empty-cell">null</span></td>`;
+                        } else {
+                            html += `<td>${val}</td>`;
+                        }
+                    });
+                    html += `</tr>`;
                 });
-                html += `</tr>`;
-            });
-            html += `                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+                
+                html += `                        </tbody>
+                        </table>
+                    </div>
+                    <div class="page-info">Page ${pageNum} of ${totalPages} | Total Records: ${groupData.length}</div>
+                </div>`;
+
+                if (pageNum < totalPages) {
+                    html += '<div class="page-break"></div>';
+                }
+            }
+
+            html += `    </div>
 </body>
 </html>`;
             downloadFile(html, `${groupName}_export.html`, "text/html");
@@ -1007,7 +1125,8 @@
                 xmlDoc = new DOMParser().parseFromString(e.target.result, "text/xml");
                 buildCache();
                 document.getElementById('status').innerText = `✓ Loaded ${attributeCache.length} elements`;
-                viewAttributes();
+                currentPage = 1;
+                viewAttributes(1);
             };
             reader.readAsText(fileInput.files[0]);
         }
@@ -1023,26 +1142,6 @@
             }
         }
 
-        function viewAttributes() {
-            if (attributeCache.length === 0) return;
-            
-            let uniqueItems = new Set();
-            attributeCache.forEach(item => Object.keys(item.data).forEach(k => { if (k.toLowerCase() !== 'id') uniqueItems.add(k); }));
-            
-            let html = '<div style="margin-bottom: 15px; background: #fff3f3; padding: 15px; border-radius: 8px; border: 1px solid #ffcccc;">';
-            html += '<strong style="color: #c0392b; display: block; margin-bottom: 5px;">Quick Strip Data (Elements or Attributes):</strong>';
-            uniqueItems.forEach(item => html += `<button class="global-remove-btn" onclick="removeGlobalItem('${item}')">✖ ${item}</button> `);
-            html += '</div>';
-            
-            html += '<table><tr><th style="width: 80px;">Row</th><th>Data Content</th></tr>';
-            attributeCache.forEach((item, index) => {
-                let content = Object.entries(item.data).filter(([key]) => key.toLowerCase() !== 'id').map(([key, value]) => `<div class="attr-badge"><span class="attr-key">${key}:</span><span class="attr-val">"${value}"</span></div>`).join('');
-                html += `<tr><td><strong># ${index+1}</strong></td><td><div class="attr-container">${content}</div></td></tr>`;
-            });
-            html += '</table>';
-            document.getElementById('attributesView').innerHTML = html;
-        }
-
         function removeGlobalItem(name) {
             if (!confirm(`Strip '${name}' from all records?`)) return;
             const children = xmlDoc.documentElement.children;
@@ -1052,7 +1151,9 @@
                 let elements = node.getElementsByTagName(name);
                 while(elements.length > 0) node.removeChild(elements[0]);
             }
-            buildCache(); viewAttributes();
+            buildCache();
+            currentPage = 1;
+            viewAttributes(1);
         }
 
         function escapeRegExp(string) {
@@ -1087,7 +1188,9 @@
             }
             
             alert(`Patch complete. Total unique entities updated: ${patchedIds.size}`);
-            buildCache(); viewAttributes();
+            buildCache();
+            currentPage = 1;
+            viewAttributes(1);
         }
 
         function patchEmptyToNull() {
@@ -1119,7 +1222,9 @@
             }
             
             alert(`Patch complete. Added missing element '<${name}>' to ${patchedIds.size} unique entities.`);
-            buildCache(); viewAttributes();
+            buildCache();
+            currentPage = 1;
+            viewAttributes(1);
         }
 
         function patchRemoveSpecial() {
@@ -1151,6 +1256,7 @@
         
         function exportMainHtml() {
             if (!xmlDoc) return alert("No data to export. Please load XML first.");
+            const totalPages = Math.ceil(attributeCache.length / ITEMS_PER_PAGE);
             let uniqueKeys = new Set();
             attributeCache.forEach(item => Object.keys(item.data).forEach(k => uniqueKeys.add(k)));
             let headers = Array.from(uniqueKeys);
@@ -1190,6 +1296,7 @@
             border-radius: 12px; 
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.05); 
             padding: 32px; 
+            margin-bottom: 20px;
         }
         .header { 
             display: flex; 
@@ -1264,50 +1371,75 @@
             font-size: 0.75rem; 
             font-weight: 500; 
         }
+        .page-break { page-break-after: always; margin-top: 40px; }
+        .page-info { 
+            text-align: center; 
+            color: var(--text-muted); 
+            font-size: 0.75rem; 
+            margin-top: 20px; 
+            padding-top: 20px; 
+            border-top: 1px solid var(--border);
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="card">
-            <div class="header">
-                <div class="header-text">
-                    <h1>Data Export Report</h1>
-                    <p>Generated on ${new Date().toLocaleString()}</p>
-                </div>
-                <div>
-                    <span class="badge">Total Records: ${attributeCache.length}</span>
-                </div>
-            </div>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th class="row-num">#</th>`;
-            
-            headers.forEach(h => html += `<th>${h}</th>`);
-            html += `                        </tr>
-                    </thead>
-                    <tbody>`;
-            
-            attributeCache.forEach((item, index) => {
-                html += `<tr><td class="row-num">${index+1}</td>`;
-                headers.forEach(h => {
-                    let val = item.data[h];
-                    if (val === undefined || val === null || val === '') {
-                        html += `<td><span class="empty-cell">Empty</span></td>`;
-                    } else if (val.toLowerCase() === 'null') {
-                        html += `<td><span class="empty-cell">null</span></td>`;
-                    } else {
-                        html += `<td>${val}</td>`;
-                    }
+    <div class="container">`;
+
+            // Generate pages
+            for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+                const pageStartIndex = (pageNum - 1) * ITEMS_PER_PAGE;
+                const pageEndIndex = Math.min(pageStartIndex + ITEMS_PER_PAGE, attributeCache.length);
+                const pageData = attributeCache.slice(pageStartIndex, pageEndIndex);
+
+                html += `<div class="card">
+                    <div class="header">
+                        <div class="header-text">
+                            <h1>Data Export Report</h1>
+                            <p>Generated on ${new Date().toLocaleString()} | Page ${pageNum} of ${totalPages}</p>
+                        </div>
+                        <div>
+                            <span class="badge">Records: ${pageStartIndex + 1}-${pageEndIndex}</span>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th class="row-num">#</th>`;
+                
+                headers.forEach(h => html += `<th>${h}</th>`);
+                html += `                            </tr>
+                            </thead>
+                            <tbody>`;
+                
+                pageData.forEach((item, index) => {
+                    const actualIndex = pageStartIndex + index + 1;
+                    html += `<tr><td class="row-num">${actualIndex}</td>`;
+                    headers.forEach(h => {
+                        let val = item.data[h];
+                        if (val === undefined || val === null || val === '') {
+                            html += `<td><span class="empty-cell">Empty</span></td>`;
+                        } else if (val.toLowerCase() === 'null') {
+                            html += `<td><span class="empty-cell">null</span></td>`;
+                        } else {
+                            html += `<td>${val}</td>`;
+                        }
+                    });
+                    html += `</tr>`;
                 });
-                html += `</tr>`;
-            });
-            html += `                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+                
+                html += `                        </tbody>
+                        </table>
+                    </div>
+                    <div class="page-info">Page ${pageNum} of ${totalPages} | Total Records: ${attributeCache.length}</div>
+                </div>`;
+
+                if (pageNum < totalPages) {
+                    html += '<div class="page-break"></div>';
+                }
+            }
+
+            html += `    </div>
 </body>
 </html>`;
             downloadFile(html, "dataset_report.html", "text/html");
