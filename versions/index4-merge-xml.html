@@ -1,0 +1,1995 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XML Processor Dashboard</title>
+    <style>
+        /* Base Reset & Layout */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Header Styles */
+        .app-header {
+            background-color: #2c3e50;
+            color: white;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+        }
+
+        .logo-placeholder {
+            width: 40px;
+            height: 40px;
+            background-color: #ecf0f1;
+            color: #2c3e50;
+            border-radius: 6px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 800;
+            font-size: 11px;
+            margin-right: 15px;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: 0.2s background-color;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .logo-placeholder:hover {
+            background-color: #d5dbdd;
+        }
+
+        .logo-placeholder img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 4px;
+        }
+
+        .logo-input {
+            display: none;
+        }
+
+        .app-header h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        /* Body & Grid Layout */
+        .app-body {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 320px;
+            background-color: #e9ecef;
+            padding: 20px;
+            overflow-y: auto;
+            border-right: 1px solid #dee2e6;
+            box-sizing: border-box;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            box-sizing: border-box;
+        }
+
+        /* Panel Styles */
+        .panel {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            border: 1px solid #eaeaea;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #2c3e50;
+            font-size: 1.25rem;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        /* UI Elements */
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 5px;
+            margin-top: 10px;
+            transition: 0.2s background-color;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        input[type="text"],
+        input[type="file"],
+        select {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-right: 10px;
+            font-size: 14px;
+            margin-bottom: 5px;
+            box-sizing: border-box;
+        }
+
+        /* Sidebar specific tweaks */
+        .sidebar input[type="text"],
+        .sidebar input[type="file"],
+        .sidebar select {
+            width: 100%;
+            margin-right: 0;
+            margin-bottom: 10px;
+        }
+
+        .sidebar button {
+            display: block;
+            width: 100%;
+            margin-right: 0;
+            margin-bottom: 8px;
+        }
+
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th,
+        td {
+            padding: 12px 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+            vertical-align: top;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        #status {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #27ae60;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        /* Tab Styles */
+        .tab {
+            display: flex;
+            border-bottom: 2px solid #ecf0f1;
+            margin-bottom: 15px;
+            margin-top: 5px;
+            flex-wrap: wrap;
+        }
+
+        .tab button {
+            background-color: transparent;
+            color: #7f8c8d;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0 5px 0 0;
+            border-radius: 6px 6px 0 0;
+            transition: 0.2s;
+        }
+
+        .tab button.active {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .tabcontent {
+            display: none;
+            padding-top: 10px;
+        }
+
+        /* Badge/Attribute Styles */
+        .global-remove-btn {
+            background-color: #e74c3c;
+            padding: 6px 12px;
+            font-size: 13px;
+            margin-right: 8px;
+            margin-top: 8px;
+            border-radius: 20px;
+        }
+
+        .global-remove-btn:hover {
+            background-color: #c0392b;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .attr-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .attr-badge {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 16px;
+            padding: 4px 12px;
+            font-size: 13px;
+            color: #495057;
+            display: inline-flex;
+            align-items: baseline;
+        }
+
+        .attr-key {
+            font-weight: 700;
+            color: #2c3e50;
+            margin-right: 5px;
+        }
+
+        .attr-val {
+            color: #16a085;
+            font-family: monospace;
+            font-size: 14px;
+        }
+
+        /* Export Buttons Color Variants */
+        .btn-kz {
+            background-color: #e67e22;
+        }
+
+        .btn-xml {
+            background-color: #9b59b6;
+        }
+
+        .btn-json {
+            background-color: #27ae60;
+        }
+
+        .btn-html {
+            background-color: #3f51b5;
+        }
+
+        .btn-patch {
+            background-color: #9b59b6;
+            display: inline-block !important;
+            width: auto !important;
+            margin-right: 5px !important;
+        }
+
+        .btn-split {
+            background-color: #16a085;
+        }
+
+        /* Export Button Group */
+        .export-button-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .export-button-group button {
+            flex: 1;
+            min-width: 60px;
+            padding: 6px 12px;
+            font-size: 12px;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Split Results Styles */
+        .split-group-card {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .split-group-info {
+            flex: 1;
+        }
+
+        .split-group-name {
+            font-weight: 600;
+            font-size: 15px;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .split-group-count {
+            font-size: 13px;
+            color: #7f8c8d;
+        }
+
+        .split-group-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-small-export {
+            padding: 6px 12px;
+            font-size: 12px;
+            margin: 0;
+            border-radius: 4px;
+            cursor: pointer;
+            border: none;
+            color: white;
+            transition: 0.2s background-color;
+        }
+
+        .btn-small-xml {
+            background-color: #9b59b6;
+        }
+
+        .btn-small-xml:hover {
+            background-color: #8e44ad;
+        }
+
+        .btn-small-html {
+            background-color: #3f51b5;
+        }
+
+        .btn-small-html:hover {
+            background-color: #3949ab;
+        }
+
+        .split-results-container {
+            background: white;
+            padding: 0;
+        }
+
+        .split-results-header {
+            background: #ecf0f1;
+            padding: 15px;
+            border-bottom: 1px solid #dee2e6;
+            margin-bottom: 15px;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .split-results-header h3 {
+            margin: 0 0 5px 0;
+            color: #2c3e50;
+            font-size: 16px;
+        }
+
+        .split-results-header p {
+            margin: 0;
+            font-size: 13px;
+            color: #7f8c8d;
+        }
+
+        /* Footer Styles */
+        .app-footer {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 10px 20px;
+            font-size: 11px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid #1a252f;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .footer-left {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .footer-center {
+            flex: 1;
+            text-align: center;
+            min-width: 200px;
+        }
+
+        .footer-right {
+            flex: 1;
+            text-align: right;
+            min-width: 150px;
+        }
+
+        .footer-link {
+            color: #3498db;
+            text-decoration: none;
+            margin: 0 6px;
+            transition: color 0.2s;
+        }
+
+        .footer-link:hover {
+            color: #5dade2;
+        }
+
+        .footer-divider {
+            color: #495057;
+            margin: 0 4px;
+        }
+
+        /* Pagination Styles */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .pagination button {
+            padding: 6px 12px;
+            font-size: 12px;
+            margin: 0;
+            min-width: 32px;
+        }
+
+        .pagination button.active {
+            background-color: #27ae60;
+            font-weight: bold;
+        }
+
+        .pagination button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .pagination-info {
+            font-size: 12px;
+            color: #7f8c8d;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        /* Logo Settings Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 10px;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 18px;
+        }
+
+        .modal-body {
+            margin-bottom: 20px;
+        }
+
+        .logo-option {
+            margin-bottom: 15px;
+        }
+
+        .logo-option label {
+            display: block;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .sample-logo-preview {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        .sample-logo {
+            width: 50px;
+            height: 50px;
+            border: 2px solid #dee2e6;
+            border-radius: 4px;
+            padding: 4px;
+            cursor: pointer;
+            transition: 0.2s border-color;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f8f9fa;
+        }
+
+        .sample-logo:hover {
+            border-color: #3498db;
+        }
+
+        .sample-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .modal-footer button {
+            padding: 8px 16px;
+            font-size: 13px;
+            margin: 0;
+            width: auto;
+        }
+
+        .btn-cancel {
+            background-color: #95a5a6;
+        }
+
+        .btn-cancel:hover {
+            background-color: #7f8c8d;
+        }
+
+        .btn-save {
+            background-color: #27ae60;
+        }
+
+        .btn-save:hover {
+            background-color: #229954;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- TOP HEADER -->
+    <header class="app-header">
+        <div class="logo-placeholder" id="logoContainer" title="Click to change logo">
+            <span id="logoText">LOGO</span>
+            <img id="logoImage" style="display: none;">
+        </div>
+        <input type="file" id="logoInput" class="logo-input" accept="image/*">
+        <h1>XML Processor Dashboard</h1>
+    </header>
+
+    <!-- MAIN APP BODY -->
+    <div class="app-body">
+
+        <!-- LEFT SIDEBAR -->
+        <aside class="sidebar">
+            <div class="panel">
+                <h2>Upload XML File</h2>
+                <input type="file" id="xmlFileInput" accept=".xml">
+                <button onclick="loadXML()">Load & Cache Main XML</button>
+                <div id="status">No file loaded</div>
+            </div>
+
+            <div class="panel">
+                <h2>Split & Extract Data</h2>
+                <p style="font-size: 13px; color: #7f8c8d; margin-top: 0;">Extract data by category or element.</p>
+
+                <div style="margin-bottom: 15px;">
+                    <label
+                        style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; color: #2c3e50;">Split
+                        Mode</label>
+                    <select id="splitMode" onchange="updateSplitUI()">
+                        <option value="category">By Category/Element</option>
+                        <option value="custom">By Custom Element</option>
+                    </select>
+                </div>
+
+                <div id="categoryUI" style="display: block;">
+                    <label
+                        style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; color: #2c3e50;">Category
+                        Field (e.g., RiskCategory)</label>
+                    <input type="text" id="categoryField" placeholder="e.g., RiskCategory" value="RiskCategory">
+                    <button onclick="splitByCategory()" class="btn-split" style="width: 100%; margin-right: 0;">View
+                        Split</button>
+                </div>
+
+                <div id="customUI" style="display: none;">
+                    <label
+                        style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; color: #2c3e50;">Element
+                        Name</label>
+                    <input type="text" id="customElement" placeholder="e.g., Department">
+                    <button onclick="splitByCustomElement()" class="btn-split"
+                        style="width: 100%; margin-right: 0;">View Split</button>
+                </div>
+
+                <div id="splitStatus" style="margin-top: 10px; font-size: 12px; color: #7f8c8d;"></div>
+            </div>
+
+            <div class="panel">
+                <h2>Export Options</h2>
+                <p style="font-size: 13px; color: #7f8c8d; margin-top: 0;">Save your modified dataset locally.</p>
+                <div class="export-button-group">
+                    <button onclick="exportMainKz()" class="btn-kz">KZ</button>
+                    <button onclick="exportMainXml()" class="btn-xml">XML</button>
+                    <button onclick="exportMainJson()" class="btn-json">JSON</button>
+                    <button onclick="exportMainHtml()" class="btn-html">HTML</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="main-content">
+            <div class="panel" style="min-height: 80vh;">
+                <h2>View Elements/Attributes & Pre-process</h2>
+
+                <div class="tab">
+                    <button class="tablinks active" onclick="openTab(event, 'Tab-ViewRemove')">View & Remove</button>
+                    <button class="tablinks" onclick="openTab(event, 'Tab-Merge')">Merge XML</button>
+                    <button class="tablinks" onclick="openTab(event, 'Tab-Patch')">Data Patching</button>
+                    <button class="tablinks" onclick="openTab(event, 'Tab-Split')">Split Results</button>
+                </div>
+
+                <div id="Tab-ViewRemove" class="tabcontent" style="display: block;">
+                    <button onclick="viewAttributes(1)" style="margin-bottom: 15px; width: auto;">Refresh View</button>
+                    <div id="attributesView">
+                        <div
+                            style="padding: 40px; text-align: center; color: #95a5a6; background: #f9f9f9; border-radius: 8px; border: 1px dashed #ccc;">
+                            <i>Please upload and load an XML file from the sidebar to view data.</i>
+                        </div>
+                    </div>
+                    <div id="paginationContainer" style="display: none;"></div>
+                </div>
+
+                <div id="Tab-Merge" class="tabcontent">
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #dee2e6;">
+                        <input type="file" id="mergeFileInput" accept=".xml"
+                            style="display: block; width: 300px; margin-bottom: 10px;">
+                        <input type="text" id="mergeKey" placeholder="Match Reference (e.g., id)">
+                        <button onclick="mergeXML()" style="background-color: #27ae60; width: auto;">Merge Data</button>
+                    </div>
+                </div>
+
+                <div id="Tab-Patch" class="tabcontent">
+                    <div style="background: #fdf5f5; padding: 20px; border-radius: 8px; border: 1px solid #ffcccc;">
+                        <h3 style="margin-top: 0;">Target Rules</h3>
+                        <input type="text" id="patchAttrName" placeholder="Attribute/Tag Name (e.g. RiskLevel)">
+                        <input type="text" id="targetChar" placeholder="Target Char (e.g. #, @)" style="width: 180px;">
+                        <div style="margin-top: 15px;">
+                            <button onclick="patchEmptyToNull()" class="btn-patch">Set Empty to NULL</button>
+                            <button onclick="patchAddMissing()" class="btn-patch">Add Missing Element</button>
+                            <button onclick="patchRemoveSpecial()" class="btn-patch">Remove Target Char</button>
+                            <button onclick="patchReplaceSpecialWithNull()" class="btn-patch">Target Char to
+                                "null"</button>
+                            <button onclick="patchRemoveElement()" class="btn-patch"
+                                style="background-color: #e74c3c;">Remove Element</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="Tab-Split" class="tabcontent">
+                    <div id="splitResultsView"
+                        style="padding: 40px; text-align: center; color: #95a5a6; background: #f9f9f9; border-radius: 8px; border: 1px dashed #ccc;">
+                        <i>No split results yet. Use the Split & Extract Data panel in the sidebar.</i>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="app-footer">
+        <div class="footer-left">
+            <span>© 2024 XML Processor Dashboard</span>
+        </div>
+        <div class="footer-center">
+            <a href="#" class="footer-link">Documentation</a>
+            <span class="footer-divider">|</span>
+            <a href="#" class="footer-link">Support</a>
+            <span class="footer-divider">|</span>
+            <a href="#" class="footer-link">About</a>
+        </div>
+        <div class="footer-right">
+            <span id="versionInfo">v1.0.0</span>
+        </div>
+    </footer>
+
+    <!-- Logo Settings Modal -->
+    <div id="logoModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Logo Settings</h2>
+            </div>
+            <div class="modal-body">
+                <div class="logo-option">
+                    <label>Upload Custom Logo</label>
+                    <input type="file" id="modalLogoInput" accept="image/*" style="width: 100%;">
+                </div>
+                <div class="logo-option">
+                    <label>Or Choose Sample Logo</label>
+                    <div class="sample-logo-preview" id="sampleLogoContainer"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeLogoModal()">Cancel</button>
+                <button class="btn-save" onclick="saveLogo()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        let xmlDoc = null;
+        let attributeCache = [];
+        let splitResults = {};
+        let selectedLogoData = null;
+        const ITEMS_PER_PAGE = 500;
+        let currentPage = 1;
+
+        // Sample logos (base64 encoded SVG)
+        const sampleLogos = [
+            {
+                name: 'Blue Circle',
+                svg: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIyMDAiIGN5PSIyMDAiIHI9IjE4MCIgZmlsbD0iIzM0OThkYiIvPjwvc3ZnPg=='
+            },
+            {
+                name: 'Green Square',
+                svg: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB4PSIzMCIgeT0iMzAiIHdpZHRoPSIzNDAiIGhlaWdodD0iMzQwIiBmaWxsPSIjMjdhZTYwIi8+PC9zdmc+'
+            },
+            {
+                name: 'Purple Triangle',
+                svg: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cG9seWdvbiBwb2ludHM9IjIwMCwzMCAzNzAsMzUwIDMwLDM1MCIgZmlsbD0iIzljNTliNiIvPjwvc3ZnPg=='
+            },
+            {
+                name: 'Orange Star',
+                svg: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cG9seWdvbiBwb2ludHM9IjIwMCw1MCAyNDcsMTM0IDMzOCwxNjAgMjYzLDIyNyAyODQsMzE4IDE5MiwyNzAgMTAwLDMxOCAxMjEsMjI3IDQ2LDE2MCAxMzcsMTM0IiBmaWxsPSIjZTY3ZTIyIi8+PC9zdmc+'
+            },
+            {
+                name: 'Red Diamond',
+                svg: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cG9seWdvbiBwb2ludHM9IjIwMCwzMCAzNzAsMjAwIDIwMCwzNzAgMzAsMjAwIiBmaWxsPSIjZTc0YzNjIi8+PC9zdmc+'
+            }
+        ];
+
+        // Initialize modal with sample logos
+        function initializeSampleLogos() {
+            const container = document.getElementById('sampleLogoContainer');
+            sampleLogos.forEach((logo, index) => {
+                const div = document.createElement('div');
+                div.className = 'sample-logo';
+                div.title = logo.name;
+                div.onclick = () => selectSampleLogo(logo.svg);
+                const img = document.createElement('img');
+                img.src = logo.svg;
+                div.appendChild(img);
+                container.appendChild(div);
+            });
+        }
+
+        function selectSampleLogo(svgData) {
+            selectedLogoData = svgData;
+            document.querySelectorAll('.sample-logo').forEach(el => {
+                el.style.borderColor = '#dee2e6';
+            });
+            event.target.closest('.sample-logo').style.borderColor = '#3498db';
+        }
+
+        // Logo modal functions
+        function openLogoModal() {
+            document.getElementById('logoModal').classList.add('show');
+            selectedLogoData = null;
+            document.getElementById('modalLogoInput').value = '';
+            document.querySelectorAll('.sample-logo').forEach(el => {
+                el.style.borderColor = '#dee2e6';
+            });
+        }
+
+        function closeLogoModal() {
+            document.getElementById('logoModal').classList.remove('show');
+            selectedLogoData = null;
+        }
+
+        function saveLogo() {
+            if (selectedLogoData) {
+                const img = document.getElementById('logoImage');
+                const logoText = document.getElementById('logoText');
+                img.src = selectedLogoData;
+                img.style.display = 'block';
+                logoText.style.display = 'none';
+                localStorage.setItem('logoImage', selectedLogoData);
+                closeLogoModal();
+            } else {
+                alert('Please select or upload a logo');
+            }
+        }
+
+        // Logo upload functionality
+        document.getElementById('logoContainer').addEventListener('click', openLogoModal);
+
+        document.getElementById('modalLogoInput').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    selectedLogoData = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Load saved logo on page load
+        window.addEventListener('DOMContentLoaded', function () {
+            initializeSampleLogos();
+            const savedLogo = localStorage.getItem('logoImage');
+            if (savedLogo) {
+                const img = document.getElementById('logoImage');
+                const logoText = document.getElementById('logoText');
+                img.src = savedLogo;
+                img.style.display = 'block';
+                logoText.style.display = 'none';
+            }
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('logoModal').addEventListener('click', function (e) {
+            if (e.target === this) {
+                closeLogoModal();
+            }
+        });
+
+        function openTab(evt, tabName) {
+            document.querySelectorAll(".tabcontent").forEach(el => el.style.display = "none");
+            document.querySelectorAll(".tablinks").forEach(el => el.className = el.className.replace(" active", ""));
+            document.getElementById(tabName).style.display = "block";
+            if (evt) evt.currentTarget.className += " active";
+        }
+
+        function updateSplitUI() {
+            const mode = document.getElementById('splitMode').value;
+            document.getElementById('categoryUI').style.display = mode === 'category' ? 'block' : 'none';
+            document.getElementById('customUI').style.display = mode === 'custom' ? 'block' : 'none';
+        }
+
+        // Pagination functions
+        function renderPagination() {
+            const totalPages = Math.ceil(attributeCache.length / ITEMS_PER_PAGE);
+            let paginationHtml = '<div class="pagination">';
+
+            // Previous button
+            paginationHtml += `<button onclick="viewAttributes(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>← Previous</button>`;
+
+            // Page numbers
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === currentPage) {
+                    paginationHtml += `<button class="active" onclick="viewAttributes(${i})">${i}</button>`;
+                } else if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    paginationHtml += `<button onclick="viewAttributes(${i})">${i}</button>`;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    paginationHtml += `<button disabled>...</button>`;
+                }
+            }
+
+            // Next button
+            paginationHtml += `<button onclick="viewAttributes(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next →</button>`;
+            paginationHtml += '</div>';
+
+            paginationHtml += `<div class="pagination-info">Page ${currentPage} of ${totalPages} | Total records: ${attributeCache.length}</div>`;
+
+            return paginationHtml;
+        }
+
+        function viewAttributes(page = 1) {
+            if (attributeCache.length === 0) return;
+
+            currentPage = page;
+            const totalPages = Math.ceil(attributeCache.length / ITEMS_PER_PAGE);
+
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+            const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, attributeCache.length);
+            const pageData = attributeCache.slice(startIndex, endIndex);
+
+            let uniqueItems = new Set();
+            attributeCache.forEach(item => Object.keys(item.data).forEach(k => { if (k.toLowerCase() !== 'id') uniqueItems.add(k); }));
+
+            let html = '<div style="margin-bottom: 15px; background: #fff3f3; padding: 15px; border-radius: 8px; border: 1px solid #ffcccc;">';
+            html += '<strong style="color: #c0392b; display: block; margin-bottom: 5px;">Quick Strip Data (Elements or Attributes):</strong>';
+            uniqueItems.forEach(item => html += `<button class="global-remove-btn" onclick="removeGlobalItem('${item}')">✖ ${item}</button> `);
+            html += '</div>';
+
+            html += '<table><tr><th style="width: 80px;">Row</th><th>Data Content</th></tr>';
+            pageData.forEach((item, index) => {
+                const actualIndex = startIndex + index + 1;
+                let content = Object.entries(item.data).filter(([key]) => key.toLowerCase() !== 'id').map(([key, value]) => `<div class="attr-badge"><span class="attr-key">${key}:</span><span class="attr-val">"${value}"</span></div>`).join('');
+                html += `<tr><td><strong># ${actualIndex}</strong></td><td><div class="attr-container">${content}</div></td></tr>`;
+            });
+            html += '</table>';
+            document.getElementById('attributesView').innerHTML = html;
+
+            document.getElementById('paginationContainer').innerHTML = renderPagination();
+            document.getElementById('paginationContainer').style.display = 'block';
+        }
+
+        function splitByCategory() {
+            if (!xmlDoc || attributeCache.length === 0) {
+                return alert("Please load an XML file first.");
+            }
+
+            const categoryField = document.getElementById('categoryField').value.trim();
+            if (!categoryField) {
+                return alert("Please enter a category field name.");
+            }
+
+            splitResults = {};
+            let totalRecords = 0;
+            let categoriesFound = new Set();
+
+            attributeCache.forEach((item, index) => {
+                const categoryValue = item.data[categoryField];
+
+                if (categoryValue) {
+                    if (!splitResults[categoryValue]) {
+                        splitResults[categoryValue] = [];
+                    }
+                    splitResults[categoryValue].push(item);
+                    categoriesFound.add(categoryValue);
+                    totalRecords++;
+                }
+            });
+
+            const categoryCount = Object.keys(splitResults).length;
+            document.getElementById('splitStatus').innerHTML =
+                `<strong>✓ Split complete!</strong><br/>` +
+                `Categories found: <strong>${categoryCount}</strong><br/>` +
+                `Total records: <strong>${totalRecords}</strong>`;
+
+            showSplitResults();
+        }
+
+        function splitByCustomElement() {
+            if (!xmlDoc || attributeCache.length === 0) {
+                return alert("Please load an XML file first.");
+            }
+
+            const customElement = document.getElementById('customElement').value.trim();
+            if (!customElement) {
+                return alert("Please enter an element name.");
+            }
+
+            splitResults = {};
+            let totalRecords = 0;
+            let elementValuesFound = new Set();
+
+            attributeCache.forEach((item, index) => {
+                const elementValue = item.data[customElement];
+
+                if (elementValue) {
+                    if (!splitResults[elementValue]) {
+                        splitResults[elementValue] = [];
+                    }
+                    splitResults[elementValue].push(item);
+                    elementValuesFound.add(elementValue);
+                    totalRecords++;
+                }
+            });
+
+            const groupCount = Object.keys(splitResults).length;
+            document.getElementById('splitStatus').innerHTML =
+                `<strong>✓ Split complete!</strong><br/>` +
+                `Groups found: <strong>${groupCount}</strong><br/>` +
+                `Total records: <strong>${totalRecords}</strong>`;
+
+            showSplitResults();
+        }
+
+        function showSplitResults() {
+            let html = `
+                <div class="split-results-header">
+                    <h3>Split Results</h3>
+                    <p>Click export buttons to download individual groups</p>
+                </div>
+                <div class="split-results-container">
+            `;
+
+            Object.keys(splitResults).forEach(groupName => {
+                const groupData = splitResults[groupName];
+                const recordCount = groupData.length;
+
+                html += `
+                    <div class="split-group-card">
+                        <div class="split-group-info">
+                            <div class="split-group-name">${escapeHtml(groupName)}</div>
+                            <div class="split-group-count">${recordCount} record${recordCount !== 1 ? 's' : ''}</div>
+                        </div>
+                        <div class="split-group-actions">
+                            <button class="btn-small-export btn-small-xml" onclick="exportSplitGroupXml('${escapeHtml(groupName)}')">XML</button>
+                            <button class="btn-small-export btn-small-html" onclick="exportSplitGroupHtml('${escapeHtml(groupName)}')">HTML</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `</div>`;
+
+            document.getElementById('splitResultsView').innerHTML = html;
+            openTab(null, 'Tab-Split');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function exportSplitGroupXml(groupName) {
+            if (!splitResults[groupName]) {
+                return alert("Group not found.");
+            }
+            let rootEl = xmlDoc.documentElement.cloneNode(false);
+            splitResults[groupName].forEach(item => {
+                let itemEl = xmlDoc.createElement(item.tagName);
+                Object.entries(item.data).forEach(([key, val]) => {
+                    let child = xmlDoc.createElement(key);
+                    child.textContent = val;
+                    itemEl.appendChild(child);
+                });
+                rootEl.appendChild(itemEl);
+            });
+            let tempDoc = xmlDoc.cloneNode(false);
+            tempDoc.appendChild(rootEl);
+            downloadFile(new XMLSerializer().serializeToString(tempDoc), `${groupName}_export.xml`, "application/xml");
+        }
+
+        function exportSplitGroupHtml(groupName) {
+            if (!splitResults[groupName]) {
+                return alert("Group not found.");
+            }
+
+            const groupData = splitResults[groupName];
+            const totalPages = Math.ceil(groupData.length / ITEMS_PER_PAGE);
+
+            let html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dataset Report - ${escapeHtml(groupName)}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-body: #f3f4f6;
+            --bg-card: #ffffff;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --border: #e5e7eb;
+            --primary: #2563eb;
+            --primary-light: #eff6ff;
+            --th-bg: #f9fafb;
+        }
+        body { 
+            font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+            background-color: var(--bg-body); 
+            color: var(--text-main); 
+            margin: 0; 
+            padding: 40px 20px; 
+            -webkit-font-smoothing: antialiased;
+        }
+        .container { 
+            max-width: 95%; 
+            margin: 0 auto; 
+        }
+        .card { 
+            background: var(--bg-card); 
+            border-radius: 12px; 
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.05); 
+            padding: 32px; 
+            margin-bottom: 20px;
+        }
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-end; 
+            margin-bottom: 24px; 
+            border-bottom: 2px solid var(--border); 
+            padding-bottom: 20px; 
+        }
+        .header-text h1 { 
+            margin: 0 0 8px 0; 
+            font-size: 1.875rem; 
+            font-weight: 700; 
+            letter-spacing: -0.025em; 
+        }
+        .header-text p { 
+            margin: 0; 
+            color: var(--text-muted); 
+            font-size: 0.875rem; 
+        }
+        .badge { 
+            background: var(--primary-light); 
+            color: var(--primary); 
+            padding: 6px 14px; 
+            border-radius: 9999px; 
+            font-size: 0.875rem; 
+            font-weight: 600; 
+            border: 1px solid #bfdbfe; 
+            display: inline-block;
+        }
+        .table-container { 
+            border: 1px solid var(--border); 
+            border-radius: 8px; 
+            overflow-x: auto; 
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            text-align: left; 
+            white-space: nowrap; 
+        }
+        th { 
+            background-color: var(--th-bg); 
+            padding: 12px 24px; 
+            font-size: 0.75rem; 
+            text-transform: uppercase; 
+            letter-spacing: 0.05em; 
+            font-weight: 600; 
+            color: #374151; 
+            border-bottom: 1px solid var(--border); 
+        }
+        td { 
+            padding: 16px 24px; 
+            font-size: 0.875rem; 
+            color: #4b5563; 
+            border-bottom: 1px solid var(--border); 
+        }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:hover { background-color: #f8fafc; }
+        .row-num { 
+            color: #9ca3af; 
+            font-weight: 500; 
+            width: 1%; 
+            text-align: center;
+        }
+        .empty-cell { 
+            display: inline-block; 
+            background: var(--bg-body); 
+            color: #9ca3af; 
+            padding: 2px 8px; 
+            border-radius: 4px; 
+            font-size: 0.75rem; 
+            font-weight: 500; 
+        }
+        .page-break { page-break-after: always; margin-top: 40px; }
+        .page-info { 
+            text-align: center; 
+            color: var(--text-muted); 
+            font-size: 0.75rem; 
+            margin-top: 20px; 
+            padding-top: 20px; 
+            border-top: 1px solid var(--border);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">`;
+
+            let uniqueKeys = new Set();
+            groupData.forEach(item => Object.keys(item.data).forEach(k => uniqueKeys.add(k)));
+            let headers = Array.from(uniqueKeys);
+
+            // Generate pages
+            for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+                const pageStartIndex = (pageNum - 1) * ITEMS_PER_PAGE;
+                const pageEndIndex = Math.min(pageStartIndex + ITEMS_PER_PAGE, groupData.length);
+                const pageData = groupData.slice(pageStartIndex, pageEndIndex);
+
+                html += `<div class="card">
+                    <div class="header">
+                        <div class="header-text">
+                            <h1>Data Export Report</h1>
+                            <p>Group: <strong>${escapeHtml(groupName)}</strong> | Page ${pageNum} of ${totalPages}</p>
+                        </div>
+                        <div>
+                            <span class="badge">Records: ${pageStartIndex + 1}-${pageEndIndex}</span>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th class="row-num">#</th>`;
+
+                headers.forEach(h => html += `<th>${h}</th>`);
+                html += `                            </tr>
+                            </thead>
+                            <tbody>`;
+
+                pageData.forEach((item, index) => {
+                    const actualIndex = pageStartIndex + index + 1;
+                    html += `<tr><td class="row-num">${actualIndex}</td>`;
+                    headers.forEach(h => {
+                        let val = item.data[h];
+                        if (val === undefined || val === null || val === '') {
+                            html += `<td><span class="empty-cell">Empty</span></td>`;
+                        } else if (val.toLowerCase() === 'null') {
+                            html += `<td><span class="empty-cell">null</span></td>`;
+                        } else {
+                            html += `<td>${val}</td>`;
+                        }
+                    });
+                    html += `</tr>`;
+                });
+
+                html += `                        </tbody>
+                        </table>
+                    </div>
+                    <div class="page-info">Page ${pageNum} of ${totalPages} | Total Records: ${groupData.length}</div>
+                </div>`;
+
+                if (pageNum < totalPages) {
+                    html += '<div class="page-break"></div>';
+                }
+            }
+
+            html += `    </div>
+</body>
+</html>`;
+            downloadFile(html, `${groupName}_export.html`, "text/html");
+        }
+
+        function loadXML() {
+            const fileInput = document.getElementById('xmlFileInput');
+            if (fileInput.files.length === 0) return alert("Please select an XML file first.");
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                xmlDoc = new DOMParser().parseFromString(e.target.result, "text/xml");
+                buildCache();
+                document.getElementById('status').innerText = `✓ Loaded ${attributeCache.length} elements`;
+                currentPage = 1;
+                viewAttributes(1);
+            };
+            reader.readAsText(fileInput.files[0]);
+        }
+
+        function buildCache() {
+            attributeCache = [];
+            const children = xmlDoc.documentElement.children;
+            for (let i = 0; i < children.length; i++) {
+                let data = {};
+                for (let j = 0; j < children[i].attributes.length; j++) data[children[i].attributes[j].name] = children[i].attributes[j].value;
+                for (let j = 0; j < children[i].children.length; j++) data[children[i].children[j].tagName] = children[i].children[j].textContent;
+                attributeCache.push({ tagName: children[i].tagName, data: data });
+            }
+        }
+
+        async function removeGlobalItem(name) {
+            if (!confirm(`Strip '${name}' from all records?`)) return;
+
+            // Grab the clicked button to show progress
+            const btn = document.activeElement.tagName === 'BUTTON' ? document.activeElement : null;
+            let originalText = btn ? btn.innerText : '';
+
+            if (btn) {
+                btn.disabled = true;
+                btn.innerText = "Scanning...";
+            }
+
+            // Yield to the browser to let the UI update
+            setTimeout(async () => {
+                try {
+                    // 1. Snapshot Elements to prevent live-DOM recalculation slowdowns
+                    let elements = Array.from(xmlDoc.getElementsByTagName(name));
+                    let removedElementsCount = elements.length;
+
+                    // 2. Snapshot Attributes via querySelectorAll
+                    let nodesWithAttr = [];
+                    try {
+                        nodesWithAttr = Array.from(xmlDoc.querySelectorAll(`[${CSS.escape(name)}]`));
+                    } catch (e) {
+                        const children = xmlDoc.documentElement.children;
+                        for (let i = 0; i < children.length; i++) {
+                            if (children[i].hasAttribute(name)) nodesWithAttr.push(children[i]);
+                        }
+                    }
+                    let removedAttrCount = nodesWithAttr.length;
+
+                    let totalTasks = elements.length + nodesWithAttr.length + attributeCache.length;
+                    let completedTasks = 0;
+
+                    // Process 2,500 records at a time to prevent main thread lockup
+                    const CHUNK_SIZE = 2500;
+
+                    const processChunk = (array, processor) => {
+                        return new Promise((resolve) => {
+                            let index = 0;
+                            function next() {
+                                let end = Math.min(index + CHUNK_SIZE, array.length);
+                                for (let i = index; i < end; i++) {
+                                    processor(array[i]);
+                                }
+                                completedTasks += (end - index);
+                                index = end;
+
+                                // Live progress update on the button you clicked
+                                if (btn) {
+                                    let percent = Math.floor((completedTasks / totalTasks) * 100);
+                                    btn.innerText = `Stripping (${percent}%)...`;
+                                }
+
+                                if (index < array.length) {
+                                    setTimeout(next, 1); // 1ms breather for the browser
+                                } else {
+                                    resolve();
+                                }
+                            }
+                            next();
+                        });
+                    };
+
+                    // Chunk through DOM element removals
+                    await processChunk(elements, (el) => {
+                        if (el.parentNode) el.parentNode.removeChild(el);
+                    });
+
+                    // Chunk through DOM attribute removals
+                    await processChunk(nodesWithAttr, (node) => {
+                        node.removeAttribute(name);
+                    });
+
+                    // Chunk through Cache updates (Bypasses the ultra-slow buildCache() loop)
+                    await processChunk(attributeCache, (item) => {
+                        if (item.data[name] !== undefined) {
+                            delete item.data[name];
+                        }
+                    });
+
+                    // UI Cleanup and Reset
+                    currentPage = 1;
+                    viewAttributes(1); // This re-renders the DOM, removing the button since the data is gone
+
+                } catch (error) {
+                    console.error(error);
+                    alert("An error occurred during mass strip.");
+                    if (btn) {
+                        btn.innerText = originalText;
+                        btn.disabled = false;
+                    }
+                }
+            }, 50);
+        }
+
+        function escapeRegExp(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        function processPatch(name, replaceFn) {
+            const children = xmlDoc.documentElement.children;
+            let patchedIds = new Set();
+
+            for (let i = 0; i < children.length; i++) {
+                let node = children[i];
+                let modified = false;
+
+                let idEl = node.getElementsByTagName('ID')[0];
+                let entityId = idEl ? idEl.textContent : ("Record-" + (i + 1));
+
+                if (node.hasAttribute(name)) {
+                    let oldVal = node.getAttribute(name);
+                    let newVal = replaceFn(oldVal);
+                    if (oldVal !== newVal) { node.setAttribute(name, newVal); modified = true; }
+                } else {
+                    let elements = node.getElementsByTagName(name);
+                    for (let el of elements) {
+                        let oldVal = el.textContent;
+                        let newVal = replaceFn(oldVal);
+                        if (oldVal !== newVal) { el.textContent = newVal; modified = true; }
+                    }
+                }
+
+                if (modified) patchedIds.add(entityId);
+            }
+
+            alert(`Patch complete. Total unique entities updated: ${patchedIds.size}`);
+            buildCache();
+            currentPage = 1;
+            viewAttributes(1);
+        }
+
+        function patchEmptyToNull() {
+            processPatch(document.getElementById('patchAttrName').value.trim(), (val) => !val.trim() ? "null" : val);
+        }
+
+        function patchAddMissing() {
+            const name = document.getElementById('patchAttrName').value.trim();
+            if (!name) return alert("Enter Attribute/Tag name.");
+
+            if (!/^[a-zA-Z_][a-zA-Z0-9_\-\.]*$/.test(name)) {
+                return alert("Invalid XML element name. Please use valid characters (e.g., no spaces).");
+            }
+
+            const children = xmlDoc.documentElement.children;
+            let patchedIds = new Set();
+
+            for (let i = 0; i < children.length; i++) {
+                let node = children[i];
+                let idEl = node.getElementsByTagName('ID')[0];
+                let entityId = idEl ? idEl.textContent : ("Record-" + (i + 1));
+
+                if (!node.hasAttribute(name) && node.getElementsByTagName(name).length === 0) {
+                    let newEl = xmlDoc.createElement(name);
+                    newEl.textContent = "null";
+                    node.appendChild(newEl);
+                    patchedIds.add(entityId);
+                }
+            }
+
+            alert(`Patch complete. Added missing element '<${name}>' to ${patchedIds.size} unique entities.`);
+            buildCache();
+            currentPage = 1;
+            viewAttributes(1);
+        }
+
+        function patchRemoveSpecial() {
+            const char = document.getElementById('targetChar').value;
+            if (!char) return alert("Enter Target Char.");
+            const regex = new RegExp(escapeRegExp(char), 'g');
+            processPatch(document.getElementById('patchAttrName').value.trim(), (val) => val.replace(regex, ''));
+        }
+
+        function patchReplaceSpecialWithNull() {
+            const char = document.getElementById('targetChar').value;
+            if (!char) return alert("Enter Target Char.");
+            const regex = new RegExp(escapeRegExp(char), 'g');
+            processPatch(document.getElementById('patchAttrName').value.trim(), (val) => val.replace(regex, 'null'));
+        }
+
+        async function patchRemoveElement() {
+            const name = document.getElementById('patchAttrName').value.trim();
+            if (!name) return alert("Enter Attribute/Tag name.");
+
+            if (!confirm(`Are you sure you want to completely remove '${name}' from all records?`)) return;
+
+            // Grab the button to show live progress
+            const btn = document.activeElement.tagName === 'BUTTON' ? document.activeElement : document.querySelector('button[onclick="patchRemoveElement()"]');
+            const originalText = btn.innerText;
+            btn.disabled = true;
+            btn.innerText = "Scanning Data...";
+
+            // Use setTimeout to yield so the UI updates to "Scanning Data..."
+            setTimeout(async () => {
+                try {
+                    // 1. Snapshot the Elements (Array.from prevents live-DOM recalculation slowdowns)
+                    let elements = Array.from(xmlDoc.getElementsByTagName(name));
+                    let removedElementsCount = elements.length;
+
+                    // 2. Snapshot the Attributes
+                    let nodesWithAttr = [];
+                    try {
+                        nodesWithAttr = Array.from(xmlDoc.querySelectorAll(`[${CSS.escape(name)}]`));
+                    } catch (e) {
+                        const children = xmlDoc.documentElement.children;
+                        for (let i = 0; i < children.length; i++) {
+                            if (children[i].hasAttribute(name)) nodesWithAttr.push(children[i]);
+                        }
+                    }
+                    let removedAttrCount = nodesWithAttr.length;
+
+                    let totalTasks = elements.length + nodesWithAttr.length + attributeCache.length;
+                    if (totalTasks === 0) {
+                        btn.innerText = originalText;
+                        btn.disabled = false;
+                        return alert(`'${name}' was not found in the dataset.`);
+                    }
+
+                    let completedTasks = 0;
+                    const CHUNK_SIZE = 2500; // Processes 2,500 records at a time to prevent crashing
+
+                    // Helper to process arrays in chunks asynchronously without locking the browser
+                    const processChunk = (array, processor) => {
+                        return new Promise((resolve) => {
+                            let index = 0;
+                            function next() {
+                                let end = Math.min(index + CHUNK_SIZE, array.length);
+                                for (let i = index; i < end; i++) {
+                                    processor(array[i]);
+                                }
+                                completedTasks += (end - index);
+                                index = end;
+
+                                // Update UI Progress
+                                let percent = Math.floor((completedTasks / totalTasks) * 100);
+                                btn.innerText = `Processing (${percent}%)...`;
+
+                                if (index < array.length) {
+                                    setTimeout(next, 1); // Pause for 1ms to let the browser breathe
+                                } else {
+                                    resolve();
+                                }
+                            }
+                            next();
+                        });
+                    };
+
+                    // Process DOM element removals
+                    await processChunk(elements, (el) => {
+                        if (el.parentNode) el.parentNode.removeChild(el);
+                    });
+
+                    // Process DOM attribute removals
+                    await processChunk(nodesWithAttr, (node) => {
+                        node.removeAttribute(name);
+                    });
+
+                    // Process JavaScript cache cleanup
+                    let cacheUpdateCount = 0;
+                    await processChunk(attributeCache, (item) => {
+                        if (item.data[name] !== undefined) {
+                            delete item.data[name];
+                            cacheUpdateCount++;
+                        }
+                    });
+
+                    alert(`Patch complete.\nRemoved ${removedElementsCount} tags and ${removedAttrCount} attributes from ${cacheUpdateCount} cached entities.`);
+
+                    // Clean up UI
+                    document.getElementById('patchAttrName').value = '';
+                    currentPage = 1;
+                    viewAttributes(1);
+
+                } catch (error) {
+                    console.error(error);
+                    alert("An error occurred during mass removal.");
+                } finally {
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                }
+            }, 50);
+        }
+
+        function downloadFile(content, filename, mimeType) {
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = filename; a.click();
+        }
+
+        function exportMainKz() { downloadFile(new XMLSerializer().serializeToString(xmlDoc), "data.kz", "application/xml"); }
+
+        function exportMainXml() { downloadFile(new XMLSerializer().serializeToString(xmlDoc), "data.xml", "application/xml"); }
+
+        function exportMainJson() {
+            let data = attributeCache.map(item => item.data);
+            downloadFile(JSON.stringify(data, null, 4), "data.json", "application/json");
+        }
+
+        function exportMainHtml() {
+            if (!xmlDoc || attributeCache.length === 0) return alert("No data to export. Please load XML first.");
+
+            // Target the button to show a loading state
+            const btn = document.activeElement.tagName === 'BUTTON' ? document.activeElement : null;
+            let originalText = btn ? btn.innerText : 'HTML';
+
+            if (btn) {
+                btn.disabled = true;
+                btn.innerText = "Building Export...";
+            }
+
+            // Yield to the browser so the loading text appears
+            setTimeout(() => {
+                try {
+                    let uniqueKeys = new Set();
+                    attributeCache.forEach(item => Object.keys(item.data).forEach(k => uniqueKeys.add(k)));
+                    let headers = Array.from(uniqueKeys);
+
+                    // Serialize data natively (Fast and uses minimal memory)
+                    let jsonData = JSON.stringify(attributeCache.map(item => item.data));
+
+                    let html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dataset Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-body: #f3f4f6;
+            --bg-card: #ffffff;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --border: #e5e7eb;
+            --primary: #2563eb;
+            --primary-light: #eff6ff;
+            --th-bg: #f9fafb;
+        }
+        body { font-family: 'Inter', system-ui, sans-serif; background-color: var(--bg-body); color: var(--text-main); margin: 0; padding: 40px 20px; }
+        .container { max-width: 95%; margin: 0 auto; }
+        .card { background: var(--bg-card); border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); padding: 32px; }
+        .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; border-bottom: 2px solid var(--border); padding-bottom: 20px; }
+        .header-text h1 { margin: 0 0 8px 0; font-size: 1.875rem; font-weight: 700; }
+        .header-text p { margin: 0; color: var(--text-muted); font-size: 0.875rem; }
+        .badge { background: var(--primary-light); color: var(--primary); padding: 6px 14px; border-radius: 9999px; font-size: 0.875rem; font-weight: 600; border: 1px solid #bfdbfe; display: inline-block; }
+        .table-container { border: 1px solid var(--border); border-radius: 8px; overflow-x: auto; min-height: 50vh; }
+        table { width: 100%; border-collapse: collapse; text-align: left; white-space: nowrap; }
+        th { background-color: var(--th-bg); padding: 12px 24px; font-size: 0.75rem; text-transform: uppercase; font-weight: 600; color: #374151; border-bottom: 1px solid var(--border); }
+        td { padding: 16px 24px; font-size: 0.875rem; color: #4b5563; border-bottom: 1px solid var(--border); }
+        tbody tr:hover { background-color: #f8fafc; }
+        .row-num { color: #9ca3af; font-weight: 500; width: 1%; text-align: center; }
+        .empty-cell { display: inline-block; background: var(--bg-body); color: #9ca3af; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 500; }
+        
+        /* Interactive Pagination Styles */
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 25px; flex-wrap: wrap; }
+        .pagination button { padding: 8px 16px; font-size: 13px; font-weight: 500; margin: 0; background-color: white; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; color: var(--text-main); transition: 0.2s; }
+        .pagination button:hover:not(:disabled) { background-color: #f8fafc; border-color: #cbd5e1; }
+        .pagination button.active { background-color: var(--primary); color: white; border-color: var(--primary); font-weight: bold; }
+        .pagination button:disabled { background-color: #f3f4f6; color: #9ca3af; cursor: not-allowed; }
+        .page-info { text-align: center; color: var(--text-muted); font-size: 0.875rem; margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <div class="header-text">
+                    <h1>Data Export Report</h1>
+                    <p>Generated on ${new Date().toLocaleString()}</p>
+                </div>
+                <div>
+                    <span class="badge" id="recordBadge">Loading...</span>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="row-num">#</th>
+                            ${headers.map(h => `<th>${h}</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr><td colspan="${headers.length + 1}" style="text-align:center; padding: 40px;">Rendering data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div id="paginationControls" class="pagination"></div>
+            <div id="pageInfo" class="page-info"></div>
+        </div>
+    </div>
+
+    <script>
+        // Data injected from the dashboard
+        const rawData = ${jsonData};
+        const headers = ${JSON.stringify(headers)};
+        const ITEMS_PER_PAGE = 500;
+        let currentPage = 1;
+        
+        function escapeHtml(text) {
+            return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        function renderTable(page) {
+            const totalPages = Math.ceil(rawData.length / ITEMS_PER_PAGE);
+            if (page < 1) page = 1;
+            if (page > totalPages) page = totalPages;
+            currentPage = page;
+            
+            const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+            const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, rawData.length);
+            const pageData = rawData.slice(startIndex, endIndex);
+            
+            document.getElementById('recordBadge').innerText = \`Records: \${startIndex + 1} - \${endIndex}\`;
+            document.getElementById('pageInfo').innerText = \`Page \${currentPage} of \${totalPages} | Total Records: \${rawData.length.toLocaleString()}\`;
+            
+            // Build the table body array
+            let tbodyHtml = [];
+            pageData.forEach((item, index) => {
+                const actualIndex = startIndex + index + 1;
+                let rowHtml = \`<tr><td class="row-num">\${actualIndex}</td>\`;
+                
+                headers.forEach(h => {
+                    let val = item[h];
+                    if (val === undefined || val === null || val === '') {
+                        rowHtml += \`<td><span class="empty-cell">Empty</span></td>\`;
+                    } else if (String(val).toLowerCase() === 'null') {
+                        rowHtml += \`<td><span class="empty-cell">null</span></td>\`;
+                    } else {
+                        rowHtml += \`<td>\${escapeHtml(val)}</td>\`;
+                    }
+                });
+                rowHtml += \`</tr>\`;
+                tbodyHtml.push(rowHtml);
+            });
+            
+            document.getElementById('tableBody').innerHTML = tbodyHtml.join('');
+            renderPagination(totalPages);
+            
+            // Scroll back to top of the table on page change
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        function renderPagination(totalPages) {
+            let html = [];
+            
+            html.push(\`<button onclick="renderTable(\${currentPage - 1})" \${currentPage === 1 ? 'disabled' : ''}>&larr; Previous</button>\`);
+            
+            // Logic to prevent rendering thousands of pagination buttons
+            let startBtn = Math.max(1, currentPage - 3);
+            let endBtn = Math.min(totalPages, currentPage + 3);
+            
+            if (startBtn > 1) {
+                html.push(\`<button onclick="renderTable(1)">1</button>\`);
+                if (startBtn > 2) html.push(\`<button disabled>...</button>\`);
+            }
+            
+            for (let i = startBtn; i <= endBtn; i++) {
+                html.push(\`<button class="\${i === currentPage ? 'active' : ''}" onclick="renderTable(\${i})">\${i}</button>\`);
+            }
+            
+            if (endBtn < totalPages) {
+                if (endBtn < totalPages - 1) html.push(\`<button disabled>...</button>\`);
+                html.push(\`<button onclick="renderTable(\${totalPages})">\${totalPages}</button>\`);
+            }
+            
+            html.push(\`<button onclick="renderTable(\${currentPage + 1})" \${currentPage === totalPages ? 'disabled' : ''}>Next &rarr;</button>\`);
+            
+            document.getElementById('paginationControls').innerHTML = html.join('');
+        }
+        
+        // Initial render on load
+        window.addEventListener('DOMContentLoaded', () => {
+            renderTable(1);
+        });
+    <\/script>
+</body>
+</html>`;
+
+                    downloadFile(html, "dataset_report.html", "text/html");
+
+                } catch (error) {
+                    console.error(error);
+                    alert("An error occurred during export.");
+                } finally {
+                    if (btn) {
+                        btn.innerText = originalText;
+                        btn.disabled = false;
+                    }
+                }
+            }, 50);
+        }
+
+        function mergeXML() {
+            if (!xmlDoc || attributeCache.length === 0) return alert("Please load a main XML file first.");
+
+            const mergeFileInput = document.getElementById('mergeFileInput');
+            const mergeKey = document.getElementById('mergeKey').value.trim();
+
+            if (mergeFileInput.files.length === 0) return alert("Please select a new XML file to merge.");
+
+            // Determine the Mode: If mergeKey is blank, we append. If it has text, we merge/update.
+            const isAppendMode = (mergeKey === "");
+
+            const file = mergeFileInput.files[0];
+            const reader = new FileReader();
+
+            // Grab the button for progress state
+            const btn = document.activeElement.tagName === 'BUTTON' ? document.activeElement : document.querySelector('button[onclick="mergeXML()"]');
+            const originalText = btn.innerText;
+            btn.disabled = true;
+            btn.innerText = "Reading file...";
+
+            reader.onload = function (e) {
+                btn.innerText = "Preparing Data...";
+
+                // Yield to the browser so the UI can update
+                setTimeout(async () => {
+                    try {
+                        // Parse the uploaded merge file
+                        const mergeDoc = new DOMParser().parseFromString(e.target.result, "text/xml");
+
+                        // Use Array.from for static, fast iteration (prevents live-DOM lag)
+                        const mergeChildren = Array.from(mergeDoc.documentElement.children);
+                        const mainChildren = xmlDoc.documentElement.children;
+
+                        let mainMap = new Map();
+
+                        // 1. If updating (not appending), build the fast lookup Map
+                        if (!isAppendMode) {
+                            for (let i = 0; i < attributeCache.length; i++) {
+                                let cacheItem = attributeCache[i];
+
+                                // Allow exact case match first, fallback to case-insensitive match
+                                let keyVal = cacheItem.data[mergeKey];
+                                if (keyVal === undefined) {
+                                    const foundKey = Object.keys(cacheItem.data).find(k => k.toLowerCase() === mergeKey.toLowerCase());
+                                    if (foundKey) keyVal = cacheItem.data[foundKey];
+                                }
+
+                                if (keyVal !== undefined) {
+                                    mainMap.set(keyVal, { cacheItem: cacheItem, domNode: mainChildren[i] });
+                                }
+                            }
+                        }
+
+                        let mergedCount = 0;
+                        let addedCount = 0;
+                        let totalTasks = mergeChildren.length;
+                        let completedTasks = 0;
+                        const CHUNK_SIZE = 1500; // Process 1,500 records per frame to prevent freezing
+
+                        // 2. Asynchronous chunk processor
+                        const processChunk = () => {
+                            return new Promise((resolve) => {
+                                let index = 0;
+                                function next() {
+                                    let end = Math.min(index + CHUNK_SIZE, totalTasks);
+
+                                    for (let i = index; i < end; i++) {
+                                        let mergeNode = mergeChildren[i];
+
+                                        // Extract data from this merge file node
+                                        let mergeData = {};
+                                        for (let j = 0; j < mergeNode.attributes.length; j++) {
+                                            mergeData[mergeNode.attributes[j].name] = mergeNode.attributes[j].value;
+                                        }
+                                        for (let j = 0; j < mergeNode.children.length; j++) {
+                                            mergeData[mergeNode.children[j].tagName] = mergeNode.children[j].textContent;
+                                        }
+
+                                        if (isAppendMode) {
+                                            // APPEND MODE: Safely clone and import the node to the main document
+                                            let newNode = xmlDoc.importNode(mergeNode, true);
+                                            xmlDoc.documentElement.appendChild(newNode);
+                                            attributeCache.push({ tagName: mergeNode.tagName, data: mergeData });
+                                            addedCount++;
+                                        } else {
+                                            // MERGE MODE: Find the match key value
+                                            let keyVal = mergeData[mergeKey];
+                                            if (keyVal === undefined) {
+                                                const foundKey = Object.keys(mergeData).find(k => k.toLowerCase() === mergeKey.toLowerCase());
+                                                if (foundKey) keyVal = mergeData[foundKey];
+                                            }
+
+                                            // If a match exists in the main file, update it
+                                            if (keyVal !== undefined && mainMap.has(keyVal)) {
+                                                let target = mainMap.get(keyVal);
+                                                let modified = false;
+
+                                                Object.entries(mergeData).forEach(([k, v]) => {
+                                                    // Skip overwriting the matching key itself
+                                                    if (k.toLowerCase() !== mergeKey.toLowerCase()) {
+
+                                                        // Update the Javascript Cache
+                                                        target.cacheItem.data[k] = v;
+
+                                                        // Update the actual DOM so exports include the changes
+                                                        if (mergeNode.hasAttribute(k)) {
+                                                            target.domNode.setAttribute(k, v);
+                                                        } else {
+                                                            let existingEl = target.domNode.getElementsByTagName(k)[0];
+                                                            if (existingEl) {
+                                                                existingEl.textContent = v;
+                                                            } else {
+                                                                let newEl = xmlDoc.createElement(k);
+                                                                newEl.textContent = v;
+                                                                target.domNode.appendChild(newEl);
+                                                            }
+                                                        }
+                                                        modified = true;
+                                                    }
+                                                });
+
+                                                if (modified) mergedCount++;
+                                            }
+                                        }
+                                    }
+
+                                    completedTasks += (end - index);
+                                    index = end;
+
+                                    // Update live progress on the button
+                                    let percent = Math.floor((completedTasks / totalTasks) * 100);
+                                    btn.innerText = isAppendMode ? `Adding (${percent}%)...` : `Merging (${percent}%)...`;
+
+                                    if (index < totalTasks) {
+                                        setTimeout(next, 1); // 1ms breather
+                                    } else {
+                                        resolve();
+                                    }
+                                }
+                                next();
+                            });
+                        };
+
+                        // Execute the chunked operation
+                        await processChunk();
+
+                        // Show the appropriate completion message
+                        if (isAppendMode) {
+                            alert(`Append complete.\nSuccessfully added ${addedCount} new records to the dataset.`);
+                        } else {
+                            alert(`Merge complete.\nSuccessfully matched and merged data into ${mergedCount} existing records.`);
+                        }
+
+                        // Cleanup UI
+                        mergeFileInput.value = '';
+                        document.getElementById('mergeKey').value = '';
+
+                        // Update the sidebar # of Loaded elements
+                        document.getElementById('status').innerText = `✓ Loaded ${attributeCache.length} elements`;
+
+                        // Reset to page 1 and view new data
+                        currentPage = 1;
+                        viewAttributes(1);
+
+                    } catch (error) {
+                        console.error(error);
+                        alert("An error occurred during the data processing.");
+                    } finally {
+                        btn.innerText = originalText;
+                        btn.disabled = false;
+                    }
+                }, 50);
+            };
+
+            reader.onerror = function () {
+                alert("Error reading the merge file.");
+                btn.innerText = originalText;
+                btn.disabled = false;
+            };
+
+            reader.readAsText(file);
+        }
+
+    </script>
+</body>
+
+</html>
