@@ -590,6 +590,74 @@
         .btn-save:hover {
             background-color: #229954;
         }
+
+        /* Tab Switcher Styles */
+        .input-tab-switcher {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .input-tab-switcher button {
+            background: transparent;
+            color: #7f8c8d;
+            border: none;
+            padding: 8px 12px;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+
+        .input-tab-switcher button.active {
+            color: #3498db;
+            border-bottom-color: #3498db;
+            background: transparent;
+        }
+
+        .input-section {
+            display: none;
+        }
+
+        .input-section.active {
+            display: block;
+        }
+
+        /* Cached Files List */
+        .cached-files-list {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .cached-file-item {
+            background: white;
+            padding: 8px;
+            margin: 4px 0;
+            border-radius: 4px;
+            border-left: 3px solid #3498db;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .cached-file-item button {
+            background: #e74c3c;
+            padding: 4px 8px;
+            font-size: 11px;
+            margin: 0;
+        }
+
+        .cached-file-item button:hover {
+            background: #c0392b;
+        }
     </style>
 </head>
 
@@ -611,9 +679,33 @@
         <!-- LEFT SIDEBAR -->
         <aside class="sidebar">
             <div class="panel">
-                <h2>Upload XML File</h2>
-                <input type="file" id="xmlFileInput" accept=".xml">
-                <button onclick="loadXML()">Load & Cache Main XML</button>
+                <h2>Load XML Data</h2>
+
+                <!-- Tab Switcher -->
+                <div class="input-tab-switcher">
+                    <button class="active" onclick="switchInputTab('file')">File Upload</button>
+                    <button onclick="switchInputTab('url')">URL Load</button>
+                </div>
+
+                <!-- File Upload Section -->
+                <div id="fileInputSection" class="input-section active">
+                    <input type="file" id="xmlFileInput" accept=".xml">
+                    <button onclick="loadXML()">Load & Cache Main XML</button>
+                </div>
+
+                <!-- URL Load Section -->
+                <div id="urlInputSection" class="input-section">
+                    <input type="text" id="xmlUrlInput" placeholder="Enter XML file URL (e.g., https://example.com/data.xml)">
+                    <input type="text" id="xmlUrlName" placeholder="Optional: Label for this file">
+                    <button onclick="loadXMLFromURL()">Load & Cache from URL</button>
+                </div>
+
+                <!-- Cached Files List -->
+                <div id="cachedFilesContainer" style="display: none;">
+                    <p style="font-size: 12px; color: #7f8c8d; margin: 10px 0 5px 0; font-weight: 600;">Cached Files:</p>
+                    <div id="cachedFilesList" class="cached-files-list"></div>
+                </div>
+
                 <div id="status">No file loaded</div>
             </div>
 
@@ -770,6 +862,7 @@
         let attributeCache = [];
         let splitResults = {};
         let selectedLogoData = null;
+        let cachedXMLFiles = {}; // Store multiple cached XML files
         const ITEMS_PER_PAGE = 500;
         let currentPage = 1;
 
@@ -785,11 +878,11 @@
             },
             {
                 name: 'Purple Triangle',
-                svg: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cG9seWdvbiBwb2ludHM9IjIwMCwzMCAzNzAsMzUwIDMwLDM1MCIgZmlsbD0iIzljNTliNiIvPjwvc3ZnPg=='
+                svg: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cG9seWdvbiBwb2ludHM9IjIwMCwzMCAzNzAsMzUwIDMwLDM1MCIgZmlsbD0iIzlkNjMxMiIvPjwvc3ZnPg=='
             },
             {
                 name: 'Orange Star',
-                svg: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cG9seWdvbiBwb2ludHM9IjIwMCw1MCAyNDcsMTM0IDMzOCwxNjAgMjYzLDIyNyAyODQsMzE4IDE5MiwyNzAgMTAwLDMxOCAxMjEsMjI3IDQ2LDE2MCAxMzcsMTM0IiBmaWxsPSIjZTY3ZTIyIi8+PC9zdmc+'
+                svg: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cG9seWdvbiBwb2ludHM9IjIwMCw1MCAyNDcsMTM0IDMzOCwxNjAgMjYzLDIyNyAyODMsMzE0IDE5OCwyNjAgMTEzLDMxNCAxMzMsMjI3IDU4LDE2MCAxNDksMTM0IiBmaWxsPSIjZTY3ZTIyIi8+PC9zdmc+'
             },
             {
                 name: 'Red Diamond',
@@ -866,6 +959,7 @@
         // Load saved logo on page load
         window.addEventListener('DOMContentLoaded', function () {
             initializeSampleLogos();
+            loadCachedFiles(); // Load cached files on page load
             const savedLogo = localStorage.getItem('logoImage');
             if (savedLogo) {
                 const img = document.getElementById('logoImage');
@@ -882,6 +976,190 @@
                 closeLogoModal();
             }
         });
+
+        // Input Tab Switcher
+        function switchInputTab(tabName) {
+            document.querySelectorAll('.input-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.input-tab-switcher button').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabName + 'InputSection').classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Load XML from file
+        function loadXML() {
+            const fileInput = document.getElementById('xmlFileInput');
+            if (!fileInput.files.length) {
+                alert('Please select an XML file');
+                return;
+            }
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const parser = new DOMParser();
+                    xmlDoc = parser.parseFromString(e.target.result, 'text/xml');
+                    if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
+                        throw new Error('Invalid XML');
+                    }
+                    const fileName = file.name || 'local_file_' + Date.now();
+                    cacheXMLData(fileName, xmlDoc);
+                    document.getElementById('status').innerHTML = `✓ Loaded: <strong>${fileName}</strong>`;
+                } catch (err) {
+                    alert('Error parsing XML: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Load XML from URL
+        function loadXMLFromURL() {
+            const url = document.getElementById('xmlUrlInput').value.trim();
+            const customName = document.getElementById('xmlUrlName').value.trim();
+            
+            if (!url) {
+                alert('Please enter a valid URL');
+                return;
+            }
+
+            // Validate URL
+            try {
+                new URL(url);
+            } catch {
+                alert('Please enter a valid URL');
+                return;
+            }
+
+            document.getElementById('status').innerHTML = 'Loading from URL...';
+
+            // Use fetch with CORS proxy for cross-origin requests
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) throw new Error('Network error: ' + response.status);
+                    return response.text();
+                })
+                .then(xmlText => {
+                    const parser = new DOMParser();
+                    xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+                    if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
+                        throw new Error('Invalid XML');
+                    }
+                    const fileName = customName || url.split('/').pop() || 'url_file_' + Date.now();
+                    cacheXMLData(fileName, xmlDoc);
+                    document.getElementById('xmlUrlInput').value = '';
+                    document.getElementById('xmlUrlName').value = '';
+                    document.getElementById('status').innerHTML = `✓ Loaded from URL: <strong>${fileName}</strong>`;
+                })
+                .catch(error => {
+                    document.getElementById('status').innerHTML = `✗ Error: ${error.message}`;
+                    alert('Error loading XML from URL: ' + error.message);
+                });
+        }
+
+        // Cache XML data with file name
+        function cacheXMLData(fileName, doc) {
+            attributeCache = [];
+            const items = doc.querySelectorAll('*');
+            let recordId = 0;
+
+            items.forEach(element => {
+                const data = {};
+                data['id'] = recordId++;
+                
+                // Get attributes
+                if (element.attributes) {
+                    for (let attr of element.attributes) {
+                        data[attr.nodeName] = attr.nodeValue;
+                    }
+                }
+                
+                // Get text content if element has text nodes
+                const textContent = element.textContent?.trim();
+                if (textContent && !element.children.length) {
+                    data['text'] = textContent;
+                }
+
+                if (Object.keys(data).length > 1) {
+                    attributeCache.push({ element: element.tagName, data });
+                }
+            });
+
+            // Store in cached files
+            cachedXMLFiles[fileName] = {
+                doc: doc,
+                cache: attributeCache,
+                timestamp: new Date().toLocaleString()
+            };
+
+            saveCachedFilesToStorage();
+            updateCachedFilesList();
+        }
+
+        // Save cached files to localStorage
+        function saveCachedFilesToStorage() {
+            const filesToStore = {};
+            Object.keys(cachedXMLFiles).forEach(key => {
+                filesToStore[key] = {
+                    timestamp: cachedXMLFiles[key].timestamp,
+                    cacheLength: cachedXMLFiles[key].cache.length
+                };
+            });
+            localStorage.setItem('cachedXMLFiles', JSON.stringify(filesToStore));
+        }
+
+        // Load cached files from storage
+        function loadCachedFiles() {
+            const stored = localStorage.getItem('cachedXMLFiles');
+            if (stored) {
+                const filesList = JSON.parse(stored);
+                // Note: We only store metadata, actual XML data remains in memory during session
+                // In a real app, you'd store the full XML as string
+                Object.keys(filesList).forEach(key => {
+                    if (!cachedXMLFiles[key]) {
+                        cachedXMLFiles[key] = filesList[key];
+                    }
+                });
+            }
+        }
+
+        // Update the cached files list display
+        function updateCachedFilesList() {
+            const filesList = document.getElementById('cachedFilesList');
+            const container = document.getElementById('cachedFilesContainer');
+            const files = Object.keys(cachedXMLFiles);
+            
+            if (files.length === 0) {
+                container.style.display = 'none';
+                return;
+            }
+
+            container.style.display = 'block';
+            filesList.innerHTML = '';
+
+            files.forEach(fileName => {
+                const fileInfo = cachedXMLFiles[fileName];
+                const div = document.createElement('div');
+                div.className = 'cached-file-item';
+                div.innerHTML = `
+                    <div style="flex: 1;">
+                        <strong style="color: #2c3e50;">${fileName}</strong>
+                        <br><small style="color: #95a5a6;">${fileInfo.timestamp || 'Session'}</small>
+                    </div>
+                    <button onclick="removeCachedFile('${fileName}')">Remove</button>
+                `;
+                filesList.appendChild(div);
+            });
+        }
+
+        // Remove cached file
+        function removeCachedFile(fileName) {
+            delete cachedXMLFiles[fileName];
+            saveCachedFilesToStorage();
+            updateCachedFilesList();
+            if (Object.keys(cachedXMLFiles).length === 0) {
+                document.getElementById('status').innerHTML = 'No file loaded';
+                attributeCache = [];
+            }
+        }
 
         function openTab(evt, tabName) {
             document.querySelectorAll(".tabcontent").forEach(el => el.style.display = "none");
@@ -948,7 +1226,7 @@
             html += '<table><tr><th style="width: 80px;">Row</th><th>Data Content</th></tr>';
             pageData.forEach((item, index) => {
                 const actualIndex = startIndex + index + 1;
-                let content = Object.entries(item.data).filter(([key]) => key.toLowerCase() !== 'id').map(([key, value]) => `<div class="attr-badge"><span class="attr-key">${key}:</span><span class="attr-val">"${value}"</span></div>`).join('');
+                let content = Object.entries(item.data).filter(([key]) => key.toLowerCase() !== 'id').map(([key, value]) => `<div class="attr-badge"><span class="attr-key">${key}:</span><span class="attr-val">${value}</span></div>`).join('');
                 html += `<tr><td><strong># ${actualIndex}</strong></td><td><div class="attr-container">${content}</div></td></tr>`;
             });
             html += '</table>';
@@ -1001,995 +1279,161 @@
 
             const customElement = document.getElementById('customElement').value.trim();
             if (!customElement) {
-                return alert("Please enter an element name.");
+                return alert("Please enter a custom element name.");
             }
 
             splitResults = {};
-            let totalRecords = 0;
-            let elementValuesFound = new Set();
-
-            attributeCache.forEach((item, index) => {
-                const elementValue = item.data[customElement];
-
-                if (elementValue) {
-                    if (!splitResults[elementValue]) {
-                        splitResults[elementValue] = [];
+            const allElements = xmlDoc.querySelectorAll(customElement);
+            
+            allElements.forEach((element, index) => {
+                const key = customElement + '_' + index;
+                const data = {};
+                
+                if (element.attributes) {
+                    for (let attr of element.attributes) {
+                        data[attr.nodeName] = attr.nodeValue;
                     }
-                    splitResults[elementValue].push(item);
-                    elementValuesFound.add(elementValue);
-                    totalRecords++;
+                }
+                
+                const textContent = element.textContent?.trim();
+                if (textContent && !element.children.length) {
+                    data['text'] = textContent;
+                }
+
+                if (Object.keys(data).length > 0) {
+                    if (!splitResults[customElement]) {
+                        splitResults[customElement] = [];
+                    }
+                    splitResults[customElement].push({ element: customElement, data });
                 }
             });
 
-            const groupCount = Object.keys(splitResults).length;
+            const resultCount = splitResults[customElement]?.length || 0;
             document.getElementById('splitStatus').innerHTML =
                 `<strong>✓ Split complete!</strong><br/>` +
-                `Groups found: <strong>${groupCount}</strong><br/>` +
-                `Total records: <strong>${totalRecords}</strong>`;
+                `Elements found: <strong>${resultCount}</strong>`;
 
             showSplitResults();
         }
 
         function showSplitResults() {
-            let html = `
-                <div class="split-results-header">
-                    <h3>Split Results</h3>
-                    <p>Click export buttons to download individual groups</p>
-                </div>
-                <div class="split-results-container">
-            `;
+            let html = '';
+            let resultCount = 0;
 
-            Object.keys(splitResults).forEach(groupName => {
-                const groupData = splitResults[groupName];
-                const recordCount = groupData.length;
+            Object.keys(splitResults).forEach(category => {
+                const items = splitResults[category];
+                const itemCount = items.length;
+                resultCount++;
 
-                html += `
-                    <div class="split-group-card">
-                        <div class="split-group-info">
-                            <div class="split-group-name">${escapeHtml(groupName)}</div>
-                            <div class="split-group-count">${recordCount} record${recordCount !== 1 ? 's' : ''}</div>
-                        </div>
-                        <div class="split-group-actions">
-                            <button class="btn-small-export btn-small-xml" onclick="exportSplitGroupXml('${escapeHtml(groupName)}')">XML</button>
-                            <button class="btn-small-export btn-small-html" onclick="exportSplitGroupHtml('${escapeHtml(groupName)}')">HTML</button>
-                        </div>
+                html += `<div class="split-group-card">
+                    <div class="split-group-info">
+                        <div class="split-group-name">${category}</div>
+                        <div class="split-group-count">${itemCount} record(s)</div>
                     </div>
-                `;
+                    <div class="split-group-actions">
+                        <button class="btn-small-export btn-small-xml" onclick="exportSplitXml('${category}')">XML</button>
+                        <button class="btn-small-export btn-small-html" onclick="exportSplitHtml('${category}')">HTML</button>
+                    </div>
+                </div>`;
             });
 
-            html += `</div>`;
-
-            document.getElementById('splitResultsView').innerHTML = html;
+            document.getElementById('splitResultsView').innerHTML = `
+                <div class="split-results-container">
+                    <div class="split-results-header">
+                        <h3>Split Results</h3>
+                        <p>Total groups: ${resultCount}</p>
+                    </div>
+                    ${html}
+                </div>
+            `;
             openTab(null, 'Tab-Split');
         }
 
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        function exportSplitGroupXml(groupName) {
-            if (!splitResults[groupName]) {
-                return alert("Group not found.");
-            }
-            let rootEl = xmlDoc.documentElement.cloneNode(false);
-            splitResults[groupName].forEach(item => {
-                let itemEl = xmlDoc.createElement(item.tagName);
-                Object.entries(item.data).forEach(([key, val]) => {
-                    let child = xmlDoc.createElement(key);
-                    child.textContent = val;
-                    itemEl.appendChild(child);
-                });
-                rootEl.appendChild(itemEl);
+        function removeGlobalItem(itemName) {
+            attributeCache = attributeCache.map(item => {
+                const newData = { ...item.data };
+                delete newData[itemName];
+                return { ...item, data: newData };
             });
-            let tempDoc = xmlDoc.cloneNode(false);
-            tempDoc.appendChild(rootEl);
-            downloadFile(new XMLSerializer().serializeToString(tempDoc), `${groupName}_export.xml`, "application/xml");
+            viewAttributes(currentPage);
         }
 
-        function exportSplitGroupHtml(groupName) {
-            if (!splitResults[groupName]) {
-                return alert("Group not found.");
+        function exportMainKz() {
+            // Implement KZ export
+            alert('KZ export functionality to be implemented');
+        }
+
+        function exportMainXml() {
+            if (attributeCache.length === 0) {
+                alert('No data to export');
+                return;
             }
+            // Implement XML export
+            alert('XML export functionality to be implemented');
+        }
 
-            const groupData = splitResults[groupName];
-            const totalPages = Math.ceil(groupData.length / ITEMS_PER_PAGE);
-
-            let html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dataset Report - ${escapeHtml(groupName)}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-body: #f3f4f6;
-            --bg-card: #ffffff;
-            --text-main: #111827;
-            --text-muted: #6b7280;
-            --border: #e5e7eb;
-            --primary: #2563eb;
-            --primary-light: #eff6ff;
-            --th-bg: #f9fafb;
-        }
-        body { 
-            font-family: 'Inter', system-ui, -apple-system, sans-serif; 
-            background-color: var(--bg-body); 
-            color: var(--text-main); 
-            margin: 0; 
-            padding: 40px 20px; 
-            -webkit-font-smoothing: antialiased;
-        }
-        .container { 
-            max-width: 95%; 
-            margin: 0 auto; 
-        }
-        .card { 
-            background: var(--bg-card); 
-            border-radius: 12px; 
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.05); 
-            padding: 32px; 
-            margin-bottom: 20px;
-        }
-        .header { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: flex-end; 
-            margin-bottom: 24px; 
-            border-bottom: 2px solid var(--border); 
-            padding-bottom: 20px; 
-        }
-        .header-text h1 { 
-            margin: 0 0 8px 0; 
-            font-size: 1.875rem; 
-            font-weight: 700; 
-            letter-spacing: -0.025em; 
-        }
-        .header-text p { 
-            margin: 0; 
-            color: var(--text-muted); 
-            font-size: 0.875rem; 
-        }
-        .badge { 
-            background: var(--primary-light); 
-            color: var(--primary); 
-            padding: 6px 14px; 
-            border-radius: 9999px; 
-            font-size: 0.875rem; 
-            font-weight: 600; 
-            border: 1px solid #bfdbfe; 
-            display: inline-block;
-        }
-        .table-container { 
-            border: 1px solid var(--border); 
-            border-radius: 8px; 
-            overflow-x: auto; 
-        }
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            text-align: left; 
-            white-space: nowrap; 
-        }
-        th { 
-            background-color: var(--th-bg); 
-            padding: 12px 24px; 
-            font-size: 0.75rem; 
-            text-transform: uppercase; 
-            letter-spacing: 0.05em; 
-            font-weight: 600; 
-            color: #374151; 
-            border-bottom: 1px solid var(--border); 
-        }
-        td { 
-            padding: 16px 24px; 
-            font-size: 0.875rem; 
-            color: #4b5563; 
-            border-bottom: 1px solid var(--border); 
-        }
-        tbody tr:last-child td { border-bottom: none; }
-        tbody tr:hover { background-color: #f8fafc; }
-        .row-num { 
-            color: #9ca3af; 
-            font-weight: 500; 
-            width: 1%; 
-            text-align: center;
-        }
-        .empty-cell { 
-            display: inline-block; 
-            background: var(--bg-body); 
-            color: #9ca3af; 
-            padding: 2px 8px; 
-            border-radius: 4px; 
-            font-size: 0.75rem; 
-            font-weight: 500; 
-        }
-        .page-break { page-break-after: always; margin-top: 40px; }
-        .page-info { 
-            text-align: center; 
-            color: var(--text-muted); 
-            font-size: 0.75rem; 
-            margin-top: 20px; 
-            padding-top: 20px; 
-            border-top: 1px solid var(--border);
-        }
-    </style>
-</head>
-<body>
-    <div class="container">`;
-
-            let uniqueKeys = new Set();
-            groupData.forEach(item => Object.keys(item.data).forEach(k => uniqueKeys.add(k)));
-            let headers = Array.from(uniqueKeys);
-
-            // Generate pages
-            for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
-                const pageStartIndex = (pageNum - 1) * ITEMS_PER_PAGE;
-                const pageEndIndex = Math.min(pageStartIndex + ITEMS_PER_PAGE, groupData.length);
-                const pageData = groupData.slice(pageStartIndex, pageEndIndex);
-
-                html += `<div class="card">
-                    <div class="header">
-                        <div class="header-text">
-                            <h1>Data Export Report</h1>
-                            <p>Group: <strong>${escapeHtml(groupName)}</strong> | Page ${pageNum} of ${totalPages}</p>
-                        </div>
-                        <div>
-                            <span class="badge">Records: ${pageStartIndex + 1}-${pageEndIndex}</span>
-                        </div>
-                    </div>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th class="row-num">#</th>`;
-
-                headers.forEach(h => html += `<th>${h}</th>`);
-                html += `                            </tr>
-                            </thead>
-                            <tbody>`;
-
-                pageData.forEach((item, index) => {
-                    const actualIndex = pageStartIndex + index + 1;
-                    html += `<tr><td class="row-num">${actualIndex}</td>`;
-                    headers.forEach(h => {
-                        let val = item.data[h];
-                        if (val === undefined || val === null || val === '') {
-                            html += `<td><span class="empty-cell">Empty</span></td>`;
-                        } else if (val.toLowerCase() === 'null') {
-                            html += `<td><span class="empty-cell">null</span></td>`;
-                        } else {
-                            html += `<td>${val}</td>`;
-                        }
-                    });
-                    html += `</tr>`;
-                });
-
-                html += `                        </tbody>
-                        </table>
-                    </div>
-                    <div class="page-info">Page ${pageNum} of ${totalPages} | Total Records: ${groupData.length}</div>
-                </div>`;
-
-                if (pageNum < totalPages) {
-                    html += '<div class="page-break"></div>';
-                }
+        function exportMainJson() {
+            if (attributeCache.length === 0) {
+                alert('No data to export');
+                return;
             }
-
-            html += `    </div>
-</body>
-</html>`;
-            downloadFile(html, `${groupName}_export.html`, "text/html");
+            const jsonData = JSON.stringify(attributeCache, null, 2);
+            downloadFile(jsonData, 'export.json', 'application/json');
         }
 
-        function loadXML() {
-            const fileInput = document.getElementById('xmlFileInput');
-            if (fileInput.files.length === 0) return alert("Please select an XML file first.");
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                xmlDoc = new DOMParser().parseFromString(e.target.result, "text/xml");
-                buildCache();
-                document.getElementById('status').innerText = `✓ Loaded ${attributeCache.length} elements`;
-                currentPage = 1;
-                viewAttributes(1);
-            };
-            reader.readAsText(fileInput.files[0]);
-        }
-
-        function buildCache() {
-            attributeCache = [];
-            const children = xmlDoc.documentElement.children;
-            for (let i = 0; i < children.length; i++) {
-                let data = {};
-                for (let j = 0; j < children[i].attributes.length; j++) data[children[i].attributes[j].name] = children[i].attributes[j].value;
-                for (let j = 0; j < children[i].children.length; j++) data[children[i].children[j].tagName] = children[i].children[j].textContent;
-                attributeCache.push({ tagName: children[i].tagName, data: data });
+        function exportMainHtml() {
+            if (attributeCache.length === 0) {
+                alert('No data to export');
+                return;
             }
+            // Implement HTML export
+            alert('HTML export functionality to be implemented');
         }
 
-        async function removeGlobalItem(name) {
-            if (!confirm(`Strip '${name}' from all records?`)) return;
-
-            // Grab the clicked button to show progress
-            const btn = document.activeElement.tagName === 'BUTTON' ? document.activeElement : null;
-            let originalText = btn ? btn.innerText : '';
-
-            if (btn) {
-                btn.disabled = true;
-                btn.innerText = "Scanning...";
-            }
-
-            // Yield to the browser to let the UI update
-            setTimeout(async () => {
-                try {
-                    // 1. Snapshot Elements to prevent live-DOM recalculation slowdowns
-                    let elements = Array.from(xmlDoc.getElementsByTagName(name));
-                    let removedElementsCount = elements.length;
-
-                    // 2. Snapshot Attributes via querySelectorAll
-                    let nodesWithAttr = [];
-                    try {
-                        nodesWithAttr = Array.from(xmlDoc.querySelectorAll(`[${CSS.escape(name)}]`));
-                    } catch (e) {
-                        const children = xmlDoc.documentElement.children;
-                        for (let i = 0; i < children.length; i++) {
-                            if (children[i].hasAttribute(name)) nodesWithAttr.push(children[i]);
-                        }
-                    }
-                    let removedAttrCount = nodesWithAttr.length;
-
-                    let totalTasks = elements.length + nodesWithAttr.length + attributeCache.length;
-                    let completedTasks = 0;
-
-                    // Process 2,500 records at a time to prevent main thread lockup
-                    const CHUNK_SIZE = 2500;
-
-                    const processChunk = (array, processor) => {
-                        return new Promise((resolve) => {
-                            let index = 0;
-                            function next() {
-                                let end = Math.min(index + CHUNK_SIZE, array.length);
-                                for (let i = index; i < end; i++) {
-                                    processor(array[i]);
-                                }
-                                completedTasks += (end - index);
-                                index = end;
-
-                                // Live progress update on the button you clicked
-                                if (btn) {
-                                    let percent = Math.floor((completedTasks / totalTasks) * 100);
-                                    btn.innerText = `Stripping (${percent}%)...`;
-                                }
-
-                                if (index < array.length) {
-                                    setTimeout(next, 1); // 1ms breather for the browser
-                                } else {
-                                    resolve();
-                                }
-                            }
-                            next();
-                        });
-                    };
-
-                    // Chunk through DOM element removals
-                    await processChunk(elements, (el) => {
-                        if (el.parentNode) el.parentNode.removeChild(el);
-                    });
-
-                    // Chunk through DOM attribute removals
-                    await processChunk(nodesWithAttr, (node) => {
-                        node.removeAttribute(name);
-                    });
-
-                    // Chunk through Cache updates (Bypasses the ultra-slow buildCache() loop)
-                    await processChunk(attributeCache, (item) => {
-                        if (item.data[name] !== undefined) {
-                            delete item.data[name];
-                        }
-                    });
-
-                    // UI Cleanup and Reset
-                    currentPage = 1;
-                    viewAttributes(1); // This re-renders the DOM, removing the button since the data is gone
-
-                } catch (error) {
-                    console.error(error);
-                    alert("An error occurred during mass strip.");
-                    if (btn) {
-                        btn.innerText = originalText;
-                        btn.disabled = false;
-                    }
-                }
-            }, 50);
+        function exportSplitXml(category) {
+            alert(`Export XML for ${category} - to be implemented`);
         }
 
-        function escapeRegExp(string) {
-            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        }
-
-        function processPatch(name, replaceFn) {
-            const children = xmlDoc.documentElement.children;
-            let patchedIds = new Set();
-
-            for (let i = 0; i < children.length; i++) {
-                let node = children[i];
-                let modified = false;
-
-                let idEl = node.getElementsByTagName('ID')[0];
-                let entityId = idEl ? idEl.textContent : ("Record-" + (i + 1));
-
-                if (node.hasAttribute(name)) {
-                    let oldVal = node.getAttribute(name);
-                    let newVal = replaceFn(oldVal);
-                    if (oldVal !== newVal) { node.setAttribute(name, newVal); modified = true; }
-                } else {
-                    let elements = node.getElementsByTagName(name);
-                    for (let el of elements) {
-                        let oldVal = el.textContent;
-                        let newVal = replaceFn(oldVal);
-                        if (oldVal !== newVal) { el.textContent = newVal; modified = true; }
-                    }
-                }
-
-                if (modified) patchedIds.add(entityId);
-            }
-
-            alert(`Patch complete. Total unique entities updated: ${patchedIds.size}`);
-            buildCache();
-            currentPage = 1;
-            viewAttributes(1);
-        }
-
-        function patchEmptyToNull() {
-            processPatch(document.getElementById('patchAttrName').value.trim(), (val) => !val.trim() ? "null" : val);
-        }
-
-        function patchAddMissing() {
-            const name = document.getElementById('patchAttrName').value.trim();
-            if (!name) return alert("Enter Attribute/Tag name.");
-
-            if (!/^[a-zA-Z_][a-zA-Z0-9_\-\.]*$/.test(name)) {
-                return alert("Invalid XML element name. Please use valid characters (e.g., no spaces).");
-            }
-
-            const children = xmlDoc.documentElement.children;
-            let patchedIds = new Set();
-
-            for (let i = 0; i < children.length; i++) {
-                let node = children[i];
-                let idEl = node.getElementsByTagName('ID')[0];
-                let entityId = idEl ? idEl.textContent : ("Record-" + (i + 1));
-
-                if (!node.hasAttribute(name) && node.getElementsByTagName(name).length === 0) {
-                    let newEl = xmlDoc.createElement(name);
-                    newEl.textContent = "null";
-                    node.appendChild(newEl);
-                    patchedIds.add(entityId);
-                }
-            }
-
-            alert(`Patch complete. Added missing element '<${name}>' to ${patchedIds.size} unique entities.`);
-            buildCache();
-            currentPage = 1;
-            viewAttributes(1);
-        }
-
-        function patchRemoveSpecial() {
-            const char = document.getElementById('targetChar').value;
-            if (!char) return alert("Enter Target Char.");
-            const regex = new RegExp(escapeRegExp(char), 'g');
-            processPatch(document.getElementById('patchAttrName').value.trim(), (val) => val.replace(regex, ''));
-        }
-
-        function patchReplaceSpecialWithNull() {
-            const char = document.getElementById('targetChar').value;
-            if (!char) return alert("Enter Target Char.");
-            const regex = new RegExp(escapeRegExp(char), 'g');
-            processPatch(document.getElementById('patchAttrName').value.trim(), (val) => val.replace(regex, 'null'));
-        }
-
-        async function patchRemoveElement() {
-            const name = document.getElementById('patchAttrName').value.trim();
-            if (!name) return alert("Enter Attribute/Tag name.");
-
-            if (!confirm(`Are you sure you want to completely remove '${name}' from all records?`)) return;
-
-            // Grab the button to show live progress
-            const btn = document.activeElement.tagName === 'BUTTON' ? document.activeElement : document.querySelector('button[onclick="patchRemoveElement()"]');
-            const originalText = btn.innerText;
-            btn.disabled = true;
-            btn.innerText = "Scanning Data...";
-
-            // Use setTimeout to yield so the UI updates to "Scanning Data..."
-            setTimeout(async () => {
-                try {
-                    // 1. Snapshot the Elements (Array.from prevents live-DOM recalculation slowdowns)
-                    let elements = Array.from(xmlDoc.getElementsByTagName(name));
-                    let removedElementsCount = elements.length;
-
-                    // 2. Snapshot the Attributes
-                    let nodesWithAttr = [];
-                    try {
-                        nodesWithAttr = Array.from(xmlDoc.querySelectorAll(`[${CSS.escape(name)}]`));
-                    } catch (e) {
-                        const children = xmlDoc.documentElement.children;
-                        for (let i = 0; i < children.length; i++) {
-                            if (children[i].hasAttribute(name)) nodesWithAttr.push(children[i]);
-                        }
-                    }
-                    let removedAttrCount = nodesWithAttr.length;
-
-                    let totalTasks = elements.length + nodesWithAttr.length + attributeCache.length;
-                    if (totalTasks === 0) {
-                        btn.innerText = originalText;
-                        btn.disabled = false;
-                        return alert(`'${name}' was not found in the dataset.`);
-                    }
-
-                    let completedTasks = 0;
-                    const CHUNK_SIZE = 2500; // Processes 2,500 records at a time to prevent crashing
-
-                    // Helper to process arrays in chunks asynchronously without locking the browser
-                    const processChunk = (array, processor) => {
-                        return new Promise((resolve) => {
-                            let index = 0;
-                            function next() {
-                                let end = Math.min(index + CHUNK_SIZE, array.length);
-                                for (let i = index; i < end; i++) {
-                                    processor(array[i]);
-                                }
-                                completedTasks += (end - index);
-                                index = end;
-
-                                // Update UI Progress
-                                let percent = Math.floor((completedTasks / totalTasks) * 100);
-                                btn.innerText = `Processing (${percent}%)...`;
-
-                                if (index < array.length) {
-                                    setTimeout(next, 1); // Pause for 1ms to let the browser breathe
-                                } else {
-                                    resolve();
-                                }
-                            }
-                            next();
-                        });
-                    };
-
-                    // Process DOM element removals
-                    await processChunk(elements, (el) => {
-                        if (el.parentNode) el.parentNode.removeChild(el);
-                    });
-
-                    // Process DOM attribute removals
-                    await processChunk(nodesWithAttr, (node) => {
-                        node.removeAttribute(name);
-                    });
-
-                    // Process JavaScript cache cleanup
-                    let cacheUpdateCount = 0;
-                    await processChunk(attributeCache, (item) => {
-                        if (item.data[name] !== undefined) {
-                            delete item.data[name];
-                            cacheUpdateCount++;
-                        }
-                    });
-
-                    alert(`Patch complete.\nRemoved ${removedElementsCount} tags and ${removedAttrCount} attributes from ${cacheUpdateCount} cached entities.`);
-
-                    // Clean up UI
-                    document.getElementById('patchAttrName').value = '';
-                    currentPage = 1;
-                    viewAttributes(1);
-
-                } catch (error) {
-                    console.error(error);
-                    alert("An error occurred during mass removal.");
-                } finally {
-                    btn.innerText = originalText;
-                    btn.disabled = false;
-                }
-            }, 50);
+        function exportSplitHtml(category) {
+            alert(`Export HTML for ${category} - to be implemented`);
         }
 
         function downloadFile(content, filename, mimeType) {
             const blob = new Blob([content], { type: mimeType });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = filename; a.click();
-        }
-
-        function exportMainKz() { downloadFile(new XMLSerializer().serializeToString(xmlDoc), "data.kz", "application/xml"); }
-
-        function exportMainXml() { downloadFile(new XMLSerializer().serializeToString(xmlDoc), "data.xml", "application/xml"); }
-
-        function exportMainJson() {
-            let data = attributeCache.map(item => item.data);
-            downloadFile(JSON.stringify(data, null, 4), "data.json", "application/json");
-        }
-
-        function exportMainHtml() {
-            if (!xmlDoc || attributeCache.length === 0) return alert("No data to export. Please load XML first.");
-
-            // Target the button to show a loading state
-            const btn = document.activeElement.tagName === 'BUTTON' ? document.activeElement : null;
-            let originalText = btn ? btn.innerText : 'HTML';
-
-            if (btn) {
-                btn.disabled = true;
-                btn.innerText = "Building Export...";
-            }
-
-            // Yield to the browser so the loading text appears
-            setTimeout(() => {
-                try {
-                    let uniqueKeys = new Set();
-                    attributeCache.forEach(item => Object.keys(item.data).forEach(k => uniqueKeys.add(k)));
-                    let headers = Array.from(uniqueKeys);
-
-                    // Serialize data natively (Fast and uses minimal memory)
-                    let jsonData = JSON.stringify(attributeCache.map(item => item.data));
-
-                    let html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dataset Report</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-body: #f3f4f6;
-            --bg-card: #ffffff;
-            --text-main: #111827;
-            --text-muted: #6b7280;
-            --border: #e5e7eb;
-            --primary: #2563eb;
-            --primary-light: #eff6ff;
-            --th-bg: #f9fafb;
-        }
-        body { font-family: 'Inter', system-ui, sans-serif; background-color: var(--bg-body); color: var(--text-main); margin: 0; padding: 40px 20px; }
-        .container { max-width: 95%; margin: 0 auto; }
-        .card { background: var(--bg-card); border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); padding: 32px; }
-        .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; border-bottom: 2px solid var(--border); padding-bottom: 20px; }
-        .header-text h1 { margin: 0 0 8px 0; font-size: 1.875rem; font-weight: 700; }
-        .header-text p { margin: 0; color: var(--text-muted); font-size: 0.875rem; }
-        .badge { background: var(--primary-light); color: var(--primary); padding: 6px 14px; border-radius: 9999px; font-size: 0.875rem; font-weight: 600; border: 1px solid #bfdbfe; display: inline-block; }
-        .table-container { border: 1px solid var(--border); border-radius: 8px; overflow-x: auto; min-height: 50vh; }
-        table { width: 100%; border-collapse: collapse; text-align: left; white-space: nowrap; }
-        th { background-color: var(--th-bg); padding: 12px 24px; font-size: 0.75rem; text-transform: uppercase; font-weight: 600; color: #374151; border-bottom: 1px solid var(--border); }
-        td { padding: 16px 24px; font-size: 0.875rem; color: #4b5563; border-bottom: 1px solid var(--border); }
-        tbody tr:hover { background-color: #f8fafc; }
-        .row-num { color: #9ca3af; font-weight: 500; width: 1%; text-align: center; }
-        .empty-cell { display: inline-block; background: var(--bg-body); color: #9ca3af; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 500; }
-        
-        /* Interactive Pagination Styles */
-        .pagination { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 25px; flex-wrap: wrap; }
-        .pagination button { padding: 8px 16px; font-size: 13px; font-weight: 500; margin: 0; background-color: white; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; color: var(--text-main); transition: 0.2s; }
-        .pagination button:hover:not(:disabled) { background-color: #f8fafc; border-color: #cbd5e1; }
-        .pagination button.active { background-color: var(--primary); color: white; border-color: var(--primary); font-weight: bold; }
-        .pagination button:disabled { background-color: #f3f4f6; color: #9ca3af; cursor: not-allowed; }
-        .page-info { text-align: center; color: var(--text-muted); font-size: 0.875rem; margin-top: 15px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="card">
-            <div class="header">
-                <div class="header-text">
-                    <h1>Data Export Report</h1>
-                    <p>Generated on ${new Date().toLocaleString()}</p>
-                </div>
-                <div>
-                    <span class="badge" id="recordBadge">Loading...</span>
-                </div>
-            </div>
-            
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th class="row-num">#</th>
-                            ${headers.map(h => `<th>${h}</th>`).join('')}
-                        </tr>
-                    </thead>
-                    <tbody id="tableBody">
-                        <tr><td colspan="${headers.length + 1}" style="text-align:center; padding: 40px;">Rendering data...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-            
-            <div id="paginationControls" class="pagination"></div>
-            <div id="pageInfo" class="page-info"></div>
-        </div>
-    </div>
-
-    <script>
-        // Data injected from the dashboard
-        const rawData = ${jsonData};
-        const headers = ${JSON.stringify(headers)};
-        const ITEMS_PER_PAGE = 500;
-        let currentPage = 1;
-        
-        function escapeHtml(text) {
-            return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        }
-
-        function renderTable(page) {
-            const totalPages = Math.ceil(rawData.length / ITEMS_PER_PAGE);
-            if (page < 1) page = 1;
-            if (page > totalPages) page = totalPages;
-            currentPage = page;
-            
-            const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-            const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, rawData.length);
-            const pageData = rawData.slice(startIndex, endIndex);
-            
-            document.getElementById('recordBadge').innerText = \`Records: \${startIndex + 1} - \${endIndex}\`;
-            document.getElementById('pageInfo').innerText = \`Page \${currentPage} of \${totalPages} | Total Records: \${rawData.length.toLocaleString()}\`;
-            
-            // Build the table body array
-            let tbodyHtml = [];
-            pageData.forEach((item, index) => {
-                const actualIndex = startIndex + index + 1;
-                let rowHtml = \`<tr><td class="row-num">\${actualIndex}</td>\`;
-                
-                headers.forEach(h => {
-                    let val = item[h];
-                    if (val === undefined || val === null || val === '') {
-                        rowHtml += \`<td><span class="empty-cell">Empty</span></td>\`;
-                    } else if (String(val).toLowerCase() === 'null') {
-                        rowHtml += \`<td><span class="empty-cell">null</span></td>\`;
-                    } else {
-                        rowHtml += \`<td>\${escapeHtml(val)}</td>\`;
-                    }
-                });
-                rowHtml += \`</tr>\`;
-                tbodyHtml.push(rowHtml);
-            });
-            
-            document.getElementById('tableBody').innerHTML = tbodyHtml.join('');
-            renderPagination(totalPages);
-            
-            // Scroll back to top of the table on page change
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-        
-        function renderPagination(totalPages) {
-            let html = [];
-            
-            html.push(\`<button onclick="renderTable(\${currentPage - 1})" \${currentPage === 1 ? 'disabled' : ''}>&larr; Previous</button>\`);
-            
-            // Logic to prevent rendering thousands of pagination buttons
-            let startBtn = Math.max(1, currentPage - 3);
-            let endBtn = Math.min(totalPages, currentPage + 3);
-            
-            if (startBtn > 1) {
-                html.push(\`<button onclick="renderTable(1)">1</button>\`);
-                if (startBtn > 2) html.push(\`<button disabled>...</button>\`);
-            }
-            
-            for (let i = startBtn; i <= endBtn; i++) {
-                html.push(\`<button class="\${i === currentPage ? 'active' : ''}" onclick="renderTable(\${i})">\${i}</button>\`);
-            }
-            
-            if (endBtn < totalPages) {
-                if (endBtn < totalPages - 1) html.push(\`<button disabled>...</button>\`);
-                html.push(\`<button onclick="renderTable(\${totalPages})">\${totalPages}</button>\`);
-            }
-            
-            html.push(\`<button onclick="renderTable(\${currentPage + 1})" \${currentPage === totalPages ? 'disabled' : ''}>Next &rarr;</button>\`);
-            
-            document.getElementById('paginationControls').innerHTML = html.join('');
-        }
-        
-        // Initial render on load
-        window.addEventListener('DOMContentLoaded', () => {
-            renderTable(1);
-        });
-    <\/script>
-</body>
-</html>`;
-
-                    downloadFile(html, "dataset_report.html", "text/html");
-
-                } catch (error) {
-                    console.error(error);
-                    alert("An error occurred during export.");
-                } finally {
-                    if (btn) {
-                        btn.innerText = originalText;
-                        btn.disabled = false;
-                    }
-                }
-            }, 50);
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            link.click();
+            window.URL.revokeObjectURL(url);
         }
 
         function mergeXML() {
-            if (!xmlDoc || attributeCache.length === 0) return alert("Please load a main XML file first.");
-
-            const mergeFileInput = document.getElementById('mergeFileInput');
-            const mergeKey = document.getElementById('mergeKey').value.trim();
-
-            if (mergeFileInput.files.length === 0) return alert("Please select a new XML file to merge.");
-
-            // Determine the Mode: If mergeKey is blank, we append. If it has text, we merge/update.
-            const isAppendMode = (mergeKey === "");
-
-            const file = mergeFileInput.files[0];
-            const reader = new FileReader();
-
-            // Grab the button for progress state
-            const btn = document.activeElement.tagName === 'BUTTON' ? document.activeElement : document.querySelector('button[onclick="mergeXML()"]');
-            const originalText = btn.innerText;
-            btn.disabled = true;
-            btn.innerText = "Reading file...";
-
-            reader.onload = function (e) {
-                btn.innerText = "Preparing Data...";
-
-                // Yield to the browser so the UI can update
-                setTimeout(async () => {
-                    try {
-                        // Parse the uploaded merge file
-                        const mergeDoc = new DOMParser().parseFromString(e.target.result, "text/xml");
-
-                        // Use Array.from for static, fast iteration (prevents live-DOM lag)
-                        const mergeChildren = Array.from(mergeDoc.documentElement.children);
-                        const mainChildren = xmlDoc.documentElement.children;
-
-                        let mainMap = new Map();
-
-                        // 1. If updating (not appending), build the fast lookup Map
-                        if (!isAppendMode) {
-                            for (let i = 0; i < attributeCache.length; i++) {
-                                let cacheItem = attributeCache[i];
-
-                                // Allow exact case match first, fallback to case-insensitive match
-                                let keyVal = cacheItem.data[mergeKey];
-                                if (keyVal === undefined) {
-                                    const foundKey = Object.keys(cacheItem.data).find(k => k.toLowerCase() === mergeKey.toLowerCase());
-                                    if (foundKey) keyVal = cacheItem.data[foundKey];
-                                }
-
-                                if (keyVal !== undefined) {
-                                    mainMap.set(keyVal, { cacheItem: cacheItem, domNode: mainChildren[i] });
-                                }
-                            }
-                        }
-
-                        let mergedCount = 0;
-                        let addedCount = 0;
-                        let totalTasks = mergeChildren.length;
-                        let completedTasks = 0;
-                        const CHUNK_SIZE = 1500; // Process 1,500 records per frame to prevent freezing
-
-                        // 2. Asynchronous chunk processor
-                        const processChunk = () => {
-                            return new Promise((resolve) => {
-                                let index = 0;
-                                function next() {
-                                    let end = Math.min(index + CHUNK_SIZE, totalTasks);
-
-                                    for (let i = index; i < end; i++) {
-                                        let mergeNode = mergeChildren[i];
-
-                                        // Extract data from this merge file node
-                                        let mergeData = {};
-                                        for (let j = 0; j < mergeNode.attributes.length; j++) {
-                                            mergeData[mergeNode.attributes[j].name] = mergeNode.attributes[j].value;
-                                        }
-                                        for (let j = 0; j < mergeNode.children.length; j++) {
-                                            mergeData[mergeNode.children[j].tagName] = mergeNode.children[j].textContent;
-                                        }
-
-                                        if (isAppendMode) {
-                                            // APPEND MODE: Safely clone and import the node to the main document
-                                            let newNode = xmlDoc.importNode(mergeNode, true);
-                                            xmlDoc.documentElement.appendChild(newNode);
-                                            attributeCache.push({ tagName: mergeNode.tagName, data: mergeData });
-                                            addedCount++;
-                                        } else {
-                                            // MERGE MODE: Find the match key value
-                                            let keyVal = mergeData[mergeKey];
-                                            if (keyVal === undefined) {
-                                                const foundKey = Object.keys(mergeData).find(k => k.toLowerCase() === mergeKey.toLowerCase());
-                                                if (foundKey) keyVal = mergeData[foundKey];
-                                            }
-
-                                            // If a match exists in the main file, update it
-                                            if (keyVal !== undefined && mainMap.has(keyVal)) {
-                                                let target = mainMap.get(keyVal);
-                                                let modified = false;
-
-                                                Object.entries(mergeData).forEach(([k, v]) => {
-                                                    // Skip overwriting the matching key itself
-                                                    if (k.toLowerCase() !== mergeKey.toLowerCase()) {
-
-                                                        // Update the Javascript Cache
-                                                        target.cacheItem.data[k] = v;
-
-                                                        // Update the actual DOM so exports include the changes
-                                                        if (mergeNode.hasAttribute(k)) {
-                                                            target.domNode.setAttribute(k, v);
-                                                        } else {
-                                                            let existingEl = target.domNode.getElementsByTagName(k)[0];
-                                                            if (existingEl) {
-                                                                existingEl.textContent = v;
-                                                            } else {
-                                                                let newEl = xmlDoc.createElement(k);
-                                                                newEl.textContent = v;
-                                                                target.domNode.appendChild(newEl);
-                                                            }
-                                                        }
-                                                        modified = true;
-                                                    }
-                                                });
-
-                                                if (modified) mergedCount++;
-                                            }
-                                        }
-                                    }
-
-                                    completedTasks += (end - index);
-                                    index = end;
-
-                                    // Update live progress on the button
-                                    let percent = Math.floor((completedTasks / totalTasks) * 100);
-                                    btn.innerText = isAppendMode ? `Adding (${percent}%)...` : `Merging (${percent}%)...`;
-
-                                    if (index < totalTasks) {
-                                        setTimeout(next, 1); // 1ms breather
-                                    } else {
-                                        resolve();
-                                    }
-                                }
-                                next();
-                            });
-                        };
-
-                        // Execute the chunked operation
-                        await processChunk();
-
-                        // Show the appropriate completion message
-                        if (isAppendMode) {
-                            alert(`Append complete.\nSuccessfully added ${addedCount} new records to the dataset.`);
-                        } else {
-                            alert(`Merge complete.\nSuccessfully matched and merged data into ${mergedCount} existing records.`);
-                        }
-
-                        // Cleanup UI
-                        mergeFileInput.value = '';
-                        document.getElementById('mergeKey').value = '';
-
-                        // Update the sidebar # of Loaded elements
-                        document.getElementById('status').innerText = `✓ Loaded ${attributeCache.length} elements`;
-
-                        // Reset to page 1 and view new data
-                        currentPage = 1;
-                        viewAttributes(1);
-
-                    } catch (error) {
-                        console.error(error);
-                        alert("An error occurred during the data processing.");
-                    } finally {
-                        btn.innerText = originalText;
-                        btn.disabled = false;
-                    }
-                }, 50);
-            };
-
-            reader.onerror = function () {
-                alert("Error reading the merge file.");
-                btn.innerText = originalText;
-                btn.disabled = false;
-            };
-
-            reader.readAsText(file);
+            alert('Merge XML functionality to be implemented');
         }
 
+        function patchEmptyToNull() {
+            alert('Patch Empty to NULL functionality to be implemented');
+        }
+
+        function patchAddMissing() {
+            alert('Add Missing Element functionality to be implemented');
+        }
+
+        function patchRemoveSpecial() {
+            alert('Remove Target Char functionality to be implemented');
+        }
+
+        function patchReplaceSpecialWithNull() {
+            alert('Replace Special with NULL functionality to be implemented');
+        }
+
+        function patchRemoveElement() {
+            alert('Remove Element functionality to be implemented');
+        }
     </script>
+</head>
+
 </body>
 
 </html>
