@@ -1260,7 +1260,36 @@
         }
         function exportMainKz() { downloadFile(new XMLSerializer().serializeToString(xmlDoc), "data.kz", "application/xml"); }
         function exportMainXml() { downloadFile(new XMLSerializer().serializeToString(xmlDoc), "data.xml", "application/xml"); }
-        function exportMainCsv() { downloadFile(new XMLSerializer().serializeToString(xmlDoc), "data.csv", "application/csv"); }
+        function exportMainCsv() {
+    if (!xmlDoc || attributeCache.length === 0) return alert("No data to export. Please load XML first.");
+    
+    // 1. Gather all unique column headers across the dataset
+    let uniqueKeys = new Set();
+    attributeCache.forEach(item => Object.keys(item.data).forEach(k => uniqueKeys.add(k)));
+    let headers = Array.from(uniqueKeys);
+    
+    let csvRows = [];
+    
+    // 2. Format and add the header row
+    csvRows.push(headers.map(h => `"${h.replace(/"/g, '""')}"`).join(","));
+    
+    // 3. Format and add data rows
+    attributeCache.forEach(item => {
+        let rowValues = headers.map(h => {
+            let val = item.data[h];
+            if (val === undefined || val === null) {
+                return '""'; // Empty cell if the attribute/tag doesn't exist for this record
+            }
+            // Standard CSV practice: double up internal quotes to escape them
+            return `"${val.toString().replace(/"/g, '""')}"`;
+        });
+        csvRows.push(rowValues.join(","));
+    });
+    
+    // 4. Join everything with line breaks and download as text/csv
+    let csvString = csvRows.join("\n");
+    downloadFile(csvString, "data.csv", "text/csv");
+}
         function exportMainJson() {
             let data = attributeCache.map(item => item.data);
             downloadFile(JSON.stringify(data, null, 4), "data.json", "application/json");
