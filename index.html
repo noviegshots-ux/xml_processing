@@ -135,6 +135,7 @@
         .btn-kz { background-color: #e67e22; }
         .btn-xml { background-color: #9b59b6; }
         .btn-json { background-color: #27ae60; }
+        .btn-csv { background-color: #27ae60; }
         .btn-html { background-color: #3f51b5; }
         .btn-patch { background-color: #9b59b6; display: inline-block !important; width: auto !important; margin-right: 5px !important; }
         .btn-split { background-color: #16a085; }
@@ -498,6 +499,7 @@
                     <button onclick="exportMainKz()" class="btn-kz">KZ</button>
                     <button onclick="exportMainXml()" class="btn-xml">XML</button>
                     <button onclick="exportMainJson()" class="btn-json">JSON</button>
+                    <button onclick="exportMainJson()" class="btn-csv">CSV</button>
                     <button onclick="exportMainHtml()" class="btn-html">HTML</button>
                 </div>
             </div>
@@ -1258,6 +1260,7 @@
         }
         function exportMainKz() { downloadFile(new XMLSerializer().serializeToString(xmlDoc), "data.kz", "application/xml"); }
         function exportMainXml() { downloadFile(new XMLSerializer().serializeToString(xmlDoc), "data.xml", "application/xml"); }
+        function exportMainCsv() { downloadFile(new XMLSerializer().serializeToString(xmlDoc), "data.csv", "application/csv"); }
         function exportMainJson() {
             let data = attributeCache.map(item => item.data);
             downloadFile(JSON.stringify(data, null, 4), "data.json", "application/json");
